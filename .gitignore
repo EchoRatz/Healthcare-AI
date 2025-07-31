@@ -135,3 +135,6 @@ nemo_env/
 *.sqlite
 logs/
 temp/
+.env
+venv
+__pycache__
