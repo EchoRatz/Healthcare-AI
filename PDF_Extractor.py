@@ -79,19 +79,206 @@ def _generate_content(task_id, asset_id):
 
 def extract_text_from_pdf_direct(pdf_path):
     """
-    Extract text directly from PDF using PyMuPDF as a fallback method.
+    Extract text from PDF line by line in proper reading order (horizontal flow).
+    Uses PyMuPDF with layout analysis for better text positioning.
     """
     try:
         doc = fitz.open(pdf_path)
         text = ""
+        
         for page_num in range(len(doc)):
             page = doc.load_page(page_num)
             text += f"\n--- Page {page_num + 1} ---\n"
-            text += page.get_text()
+            
+            # Extract text with positioning information
+            page_text = extract_text_line_by_line(page)
+            text += page_text
+            
         doc.close()
         return text
     except Exception as e:
         print(f"Error extracting text directly from PDF: {e}")
+        return None
+
+def extract_text_line_by_line(page):
+    """
+    Extract text from a PDF page line by line in proper reading order.
+    Groups text by lines and sorts horizontally within each line.
+    """
+    try:
+        # Get text with detailed positioning using text dictionary
+        text_dict = page.get_text("dict")
+        
+        # Extract all text blocks with position information
+        text_elements = []
+        
+        for block in text_dict["blocks"]:
+            if "lines" in block:  # Text block (not image)
+                for line in block["lines"]:
+                    line_text = ""
+                    line_bbox = line["bbox"]  # Bounding box: (x0, y0, x1, y1)
+                    
+                    # Collect all text spans in this line
+                    spans_in_line = []
+                    for span in line["spans"]:
+                        if span["text"].strip():  # Only non-empty text
+                            spans_in_line.append({
+                                "text": span["text"],
+                                "x0": span["bbox"][0],
+                                "y0": span["bbox"][1],
+                                "x1": span["bbox"][2], 
+                                "y1": span["bbox"][3]
+                            })
+                    
+                    # Sort spans in this line by horizontal position (left to right)
+                    spans_in_line.sort(key=lambda x: x["x0"])
+                    
+                    # Combine spans into line text
+                    line_text = ""
+                    prev_x1 = 0
+                    for span in spans_in_line:
+                        # Add space if there's a significant gap between spans
+                        if prev_x1 > 0 and span["x0"] - prev_x1 > 5:
+                            line_text += " "
+                        line_text += span["text"]
+                        prev_x1 = span["x1"]
+                    
+                    if line_text.strip():
+                        text_elements.append({
+                            "text": line_text,
+                            "y": line_bbox[1],  # Use top y-coordinate for sorting
+                            "x": line_bbox[0],  # Use left x-coordinate for secondary sorting
+                            "bbox": line_bbox
+                        })
+        
+        # Sort all text elements by vertical position (top to bottom)
+        # Then by horizontal position (left to right) for elements at similar heights
+        text_elements.sort(key=lambda x: (round(x["y"], 1), x["x"]))
+        
+        # Group elements into lines based on similar y-coordinates
+        lines = []
+        current_line = []
+        current_y = -1
+        y_threshold = 5  # Pixels tolerance for grouping into same line
+        
+        for element in text_elements:
+            if current_y == -1 or abs(element["y"] - current_y) <= y_threshold:
+                # Same line or first element
+                current_line.append(element)
+                current_y = element["y"]
+            else:
+                # New line
+                if current_line:
+                    # Sort current line by x-coordinate (left to right)
+                    current_line.sort(key=lambda x: x["x"])
+                    lines.append(current_line)
+                current_line = [element]
+                current_y = element["y"]
+        
+        # Don't forget the last line
+        if current_line:
+            current_line.sort(key=lambda x: x["x"])
+            lines.append(current_line)
+        
+        # Build final text with proper line breaks
+        page_text = ""
+        for line_elements in lines:
+            line_text = ""
+            prev_x1 = 0
+            
+            for element in line_elements:
+                # Add appropriate spacing between elements in the same line
+                if prev_x1 > 0:
+                    gap = element["x"] - prev_x1
+                    if gap > 10:  # Significant gap - add space
+                        line_text += " "
+                    elif gap > 30:  # Very large gap - could be table columns
+                        line_text += "   "  # Multiple spaces
+                
+                line_text += element["text"]
+                prev_x1 = element["bbox"][2]  # Right edge of current element
+            
+            if line_text.strip():
+                page_text += line_text.rstrip() + "\n"
+        
+        return page_text
+        
+    except Exception as e:
+        print(f"Error in line-by-line extraction: {e}")
+        # Fallback to simple text extraction
+        try:
+            return page.get_text()
+        except:
+            return ""
+
+def extract_text_with_blocks(page):
+    """
+    Alternative extraction method using text blocks for better layout handling.
+    Good for documents with complex layouts, tables, or multiple columns.
+    """
+    try:
+        # Get text blocks - these preserve reading order better for complex layouts
+        blocks = page.get_text("blocks")
+        
+        # Sort blocks by position (top to bottom, left to right)
+        blocks.sort(key=lambda block: (round(block[1], 1), block[0]))  # y-coordinate first, then x
+        
+        page_text = ""
+        for block in blocks:
+            # block format: (x0, y0, x1, y1, "text content", block_num, block_type)
+            if len(block) >= 5 and block[4].strip():  # Has text content
+                text_content = block[4].strip()
+                
+                # Clean up the text - remove excessive whitespace but preserve structure
+                lines = text_content.split('\n')
+                cleaned_lines = []
+                
+                for line in lines:
+                    cleaned_line = ' '.join(line.split())  # Normalize spaces
+                    if cleaned_line:
+                        cleaned_lines.append(cleaned_line)
+                
+                if cleaned_lines:
+                    page_text += '\n'.join(cleaned_lines) + '\n\n'
+        
+        return page_text
+        
+    except Exception as e:
+        print(f"Error in block-based extraction: {e}")
+        return ""
+
+def extract_text_from_pdf_enhanced(pdf_path, method="line_by_line"):
+    """
+    Enhanced PDF text extraction with multiple methods.
+    
+    Args:
+        pdf_path: Path to PDF file
+        method: "line_by_line" (default), "blocks", or "simple"
+    """
+    try:
+        doc = fitz.open(pdf_path)
+        text = ""
+        
+        print(f"Using extraction method: {method}")
+        
+        for page_num in range(len(doc)):
+            page = doc.load_page(page_num)
+            text += f"\n--- Page {page_num + 1} ---\n"
+            
+            if method == "line_by_line":
+                page_text = extract_text_line_by_line(page)
+            elif method == "blocks":
+                page_text = extract_text_with_blocks(page)
+            else:  # simple
+                page_text = page.get_text()
+            
+            text += page_text
+            
+        doc.close()
+        return text
+        
+    except Exception as e:
+        print(f"Error in enhanced PDF extraction: {e}")
         return None
 
 def convert_pdf_to_images(pdf_path, output_dir=None):
