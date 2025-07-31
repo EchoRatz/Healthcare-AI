@@ -1,0 +1,13 @@
+# Core dependencies
+faiss-cpu>=1.7.4
+sentence-transformers>=2.2.2
+numpy>=1.21.0
+requests>=2.28.0
+
+# Optional: For GPU support (uncomment if needed)
+# faiss-gpu>=1.7.4
+
+# Development dependencies (optional)
+# pytest>=7.0.0
+# black>=22.0.0
+# flake8>=5.0.0
