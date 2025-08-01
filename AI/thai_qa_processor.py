@@ -55,6 +55,7 @@ class ThaiHealthcareQA:
 
 รูปแบบการตอบ:
 ตอบเฉพาะตัวอักษรที่ถูกต้อง เช่น "ก" หรือ "ก, ค" หรือ "ข, ค, ง"
+ห้ามใส่คำอธิบายเพิ่มเติม ตอบเฉพาะตัวอักษรเท่านั้น
 
 หากไม่มีคำตอบที่ถูกต้องตามข้อมูล ให้ตอบ: "ไม่มีคำตอบที่ถูกต้อง"
 """
@@ -318,6 +319,64 @@ class ThaiHealthcareQA:
         relevant_facts.sort(key=lambda x: x["search_score"], reverse=True)
         return relevant_facts[:top_k]
 
+    def extract_choice_only(self, ai_response: str) -> str:
+        """Extract only the choice letters from AI response"""
+        import re
+        
+        # Clean the response
+        response = ai_response.strip()
+        
+        # Check for common "no answer" phrases FIRST (before extracting letters)
+        no_answer_phrases = [
+            'ไม่มีคำตอบที่ถูกต้อง',
+            'ไม่มีข้อใดถูกต้อง', 
+            'ไม่มีตัวเลือกที่ถูกต้อง',
+            'ไม่พบข้อมูล',
+            'ไม่มีข้อมูล',
+            'ข้อมูลไม่เพียงพอ',
+            'ไม่สามารถ',
+            'ขออภัย'
+        ]
+        
+        response_lower = response.lower()
+        for phrase in no_answer_phrases:
+            if phrase.lower() in response_lower:
+                return "ไม่มีคำตอบที่ถูกต้อง"
+        
+        # Look for Thai choice letters at the end of response or in quotes
+        choice_patterns = [
+            r'ตอบ[:\s]*([ก-ง](?:\s*,\s*[ก-ง])*)',  # ตอบ: ก, ข
+            r'คำตอบ[:\s]*([ก-ง](?:\s*,\s*[ก-ง])*)',  # คำตอบ: ก
+            r'"([ก-ง](?:\s*,\s*[ก-ง])*)"',  # "ก, ข"
+            r'([ก-ง](?:\s*,\s*[ก-ง])*)\s*$',  # ก, ข at end
+            r'ให้ตอบ[:\s]*([ก-ง](?:\s*,\s*[ก-ง])*)',  # ให้ตอบ: ก
+        ]
+        
+        # Try each pattern
+        for pattern in choice_patterns:
+            matches = re.findall(pattern, response)
+            if matches:
+                choice = matches[-1].strip()  # Get last match
+                # Clean up spacing around commas
+                choice = re.sub(r'\s*,\s*', ', ', choice)
+                return choice
+        
+        # Look for individual Thai letters scattered in text (only if no "no answer" phrases)
+        thai_letters = re.findall(r'[ก-ง]', response)
+        if thai_letters:
+            # Remove duplicates while preserving order
+            unique_letters = []
+            for letter in thai_letters:
+                if letter not in unique_letters:
+                    unique_letters.append(letter)
+            
+            # If we found reasonable number of letters (1-4), return them
+            if 1 <= len(unique_letters) <= 4:
+                return ', '.join(unique_letters)
+        
+        # If all else fails, return the original response (but truncated)
+        return response[:50] + "..." if len(response) > 50 else response
+
     def parse_question(self, question_text: str) -> Dict[str, Any]:
         """Parse a Thai multiple choice question"""
         # Handle both multi-line and single-line CSV formats
@@ -452,15 +511,16 @@ class ThaiHealthcareQA:
             chain = prompt | self.model
 
             # Generate answer
-            result = chain.invoke(
-                {
-                    "context": full_context,
-                    "question": question,
-                    "choices": formatted_choices,
-                }
-            )
-
-            # Extract and cache information from this Q&A pair
+            result = chain.invoke({
+                "context": full_context,
+                "question": question,
+                "choices": formatted_choices
+            })
+            
+            # Extract only the choice letters from the response
+            clean_answer = self.extract_choice_only(result)
+            
+            # Extract and cache information from this Q&A pair (use original result for better context)
             if enable_caching and self.cache_enabled:
                 try:
                     extracted_info = self.extract_information(question, result)
@@ -471,9 +531,9 @@ class ThaiHealthcareQA:
                             self.save_knowledge_cache()
                 except Exception as e:
                     print(f"⚠️  Cache extraction failed: {e}")
-
-            return result
-
+            
+            return clean_answer
+            
         except Exception as e:
             return f"เกิดข้อผิดพลาด: {str(e)}"
 
@@ -531,8 +591,14 @@ class ThaiHealthcareQA:
             chain = prompt | self.model
 
             # Generate answer
-            result = chain.invoke({"context": full_context, "question": question})
-
+            result = chain.invoke({
+                "context": full_context,
+                "question": question
+            })
+            
+            # For open-ended questions, try to extract clean answer too
+            clean_answer = self.extract_choice_only(result)
+            
             # Extract and cache information from this Q&A pair (if meaningful answer was generated)
             if enable_caching and self.cache_enabled and "ไม่พบข้อมูล" not in result:
                 try:
@@ -544,9 +610,9 @@ class ThaiHealthcareQA:
                             self.save_knowledge_cache()
                 except Exception as e:
                     print(f"⚠️  Cache extraction failed: {e}")
-
-            return result
-
+            
+            return clean_answer
+            
         except Exception as e:
             return f"เกิดข้อผิดพลาด: {str(e)}"
 
