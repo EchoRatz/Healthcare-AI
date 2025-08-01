@@ -26,9 +26,15 @@ class ThaiHealthcareQA:
         self.db_location = "./thai_healthcare_db"
         self.vector_store = None
         self.retriever = None
-        self.redis_client = redis.Redis(
-            host="localhost", port=6379, db=0, decode_responses=True
-        )
+        try:
+            self.redis_client = redis.Redis(
+                host="localhost", port=6379, db=0, decode_responses=True
+            )
+            # Test the connection
+            self.redis_client.ping()
+        except redis.ConnectionError as e:
+            print("Error: Unable to connect to Redis. Caching will be disabled.")
+            self.redis_client = None
         self.cache_key = "knowledge_cache"
 
         # Knowledge cache system
