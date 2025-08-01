@@ -583,21 +583,6 @@ class ImprovedHealthcareQA:
 
         print(f"✅ Using model: {self.model_name}")
 
-        # Initialize MCP if available (non-blocking)
-        if self.mcp_available:
-            print("🔗 Attempting MCP integration (optional)...")
-            try:
-                await self.initialize_mcp()
-                if self.mcp_client and self.mcp_client.initialized:
-                    print("✅ MCP integration successful")
-                else:
-                    print("⚠️  MCP integration failed - continuing without MCP")
-            except Exception as e:
-                print(f"⚠️  MCP initialization error - continuing without MCP: {e}")
-                self.mcp_available = False
-        else:
-            print("⚠️  Running without MCP integration")
-
         # Load knowledge base
         self.load_knowledge_base()
 
@@ -626,24 +611,11 @@ class ImprovedHealthcareQA:
             # Search for context
             context = self.search_context(analysis)
 
-            # Get additional context from MCP if available
-            if self.mcp_available and self.mcp_client and self.mcp_client.initialized:
-                mcp_context = await self.query_mcp_for_context(question, analysis)
-                if mcp_context:
-                    context += f"\n\nMCP Additional Context: {mcp_context}"
-
             # Query LLM
             answers, confidence = self.query_llama31_enhanced(question, choices, context)
 
             # Validate answer with local validation
             validation = self.validate_answer_enhanced(question, choices, answers, context)
-
-            # Additional validation with MCP if available
-            if self.mcp_available and self.mcp_client and self.mcp_client.initialized:
-                mcp_validation = await self.validate_with_mcp(question, answers, choices)
-                if not mcp_validation["valid"]:
-                    validation.confidence *= 0.8  # Reduce confidence if MCP validation fails
-                    validation.reasoning += f" | MCP: {mcp_validation['reasoning']}"
 
             # Apply corrections if needed
             final_answers = answers
@@ -659,7 +631,6 @@ class ImprovedHealthcareQA:
                 'confidence': confidence,
                 'validation_passed': validation.is_valid,
                 'reasoning': validation.reasoning,
-                'mcp_used': self.mcp_available and self.mcp_client and self.mcp_client.initialized
             })
 
             # Progress update
