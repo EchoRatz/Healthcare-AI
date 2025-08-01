@@ -196,9 +196,11 @@ class ThaiHealthcareQA:
             else:
                 facts = []
 
-            self.redis_client.hset(self.cache_key, "last_updated", datetime.now().isoformat())
+            self.redis_client.hset(
+                self.cache_key, "last_updated", datetime.now().isoformat()
+            )
             self.redis_client.hset(self.cache_key, "facts", json.dumps(facts))
-            
+
             print(f"💾 Saved {len(facts)} facts to Redis cache")
         except Exception as e:
             print(f"⚠️  Error saving cache: {e}")
@@ -246,7 +248,7 @@ class ThaiHealthcareQA:
         except Exception as e:
             print(f"❌ Error extracting information: {e}")
             return None
-        
+
     def add_fact_to_cache(self, fact):
         try:
             facts = self.redis_client.hget(self.cache_key, "facts")
@@ -288,7 +290,7 @@ class ThaiHealthcareQA:
         if facts:
             facts = json.loads(facts)
         return []
-    
+
     def clear_cache(self):
         self.redis_client.delete(self.cache_key)
         print("Cleared cache")
@@ -857,30 +859,31 @@ class ThaiHealthcareQA:
             print(f"❌ เกิดข้อผิดพลาดในการประมวลผล: {str(e)}")
 
     def show_cache_stats(self):
-        facts = self.redis_client.hgetall(self.cache_key, "facts")
-        if facts:
-            facts = json.loads(facts)
-        else:
-            facts = []
+        try:
+            # Retrieve all fields and values from the hash
+            all_fields = self.redis_client.hgetall(self.cache_key)
 
-        print(f"📊 Cache Statistics:")
-        print(f"   - Total facts: {len(facts)}")
+            # Extract facts from the hash
+            facts = json.loads(all_fields.get("facts", "[]")) if all_fields else []
 
-        if facts:
-            types_count = {}
-            for fact in facts:
-                fact_type = fact.get("type", "Unknown")
-                types_count[fact_type] = types_count.get(fact_type, 0) + 1
+            print(f"📊 Cache Statistics:")
+            print(f"   - Total facts: {len(facts)}")
 
-            print("   - Facts by type:")
-            for fact_type, count in sorted(types_count.items()):
-                print(f"     - {fact_type}: {count}")
+            if facts:
+                types_count = {}
+                for fact in facts:
+                    fact_type = fact.get("type", "Unknown")
+                    types_count[fact_type] = types_count.get(fact_type, 0) + 1
 
-            last_updated = self.redis_client.hget(self.cache_key, "last_updated")
-            if last_updated:
-                print(f"   - Last updated: {last_updated}")
+                print("   - Facts by type:")
+                for fact_type, count in sorted(types_count.items()):
+                    print(f"     - {fact_type}: {count}")
 
-    
+                last_updated = all_fields.get("last_updated")
+                if last_updated:
+                    print(f"   - Last updated: {last_updated}")
+        except Exception as e:
+            print(f"⚠️  Error showing cache stats: {e}")
 
     def clear_cache(self):
         """Clear the knowledge cache"""
