@@ -265,39 +265,63 @@ class FreeEnhancedThaiQA:
     
     def _find_with_embeddings(self, question: str, top_k: int) -> List[Tuple[str, float]]:
         """Find using embeddings + FAISS"""
+        if not hasattr(self, 'sentences') or len(self.sentences) == 0:
+            return []
+            
         question_embedding = self.embedding_model.encode([question])
+        if question_embedding.size == 0:
+            return []
+            
         faiss.normalize_L2(question_embedding.astype('float32'))
         
         similarities, indices = self.faiss_index.search(question_embedding.astype('float32'), top_k)
         
         results = []
         for similarity, idx in zip(similarities[0], indices[0]):
-            if similarity > 0.1:
+            if similarity > 0.1 and idx < len(self.sentences):
                 results.append((self.sentences[idx], float(similarity)))
         return results
     
     def _find_with_embeddings_basic(self, question: str, top_k: int) -> List[Tuple[str, float]]:
         """Find using embeddings without FAISS"""
+        if not hasattr(self, 'embeddings') or self.embeddings is None or len(self.embeddings) == 0:
+            return []
+        
         question_embedding = self.embedding_model.encode([question])
+        if question_embedding.size == 0:
+            return []
+            
         similarities = cosine_similarity(question_embedding, self.embeddings)[0]
         
+        if len(similarities) == 0:
+            return []
+            
         top_indices = np.argsort(similarities)[-top_k:][::-1]
         results = []
         for idx in top_indices:
-            if similarities[idx] > 0.1:
-                results.append((self.sentences[idx], similarities[idx]))
+            if idx < len(similarities) and similarities[idx] > 0.1:
+                results.append((self.sentences[idx], float(similarities[idx])))
         return results
     
     def _find_with_enhanced_tfidf(self, question: str, top_k: int) -> List[Tuple[str, float]]:
         """Enhanced TF-IDF search"""
+        if not hasattr(self, 'tfidf_vectors') or self.tfidf_vectors is None:
+            return []
+            
         question_vector = self.tfidf_vectorizer.transform([question])
+        if question_vector.size == 0:
+            return []
+            
         similarities = cosine_similarity(question_vector, self.tfidf_vectors)[0]
         
+        if len(similarities) == 0:
+            return []
+            
         top_indices = np.argsort(similarities)[-top_k:][::-1]
         results = []
         for idx in top_indices:
-            if similarities[idx] > 0.05:
-                results.append((self.sentences[idx], similarities[idx]))
+            if idx < len(similarities) and similarities[idx] > 0.05:
+                results.append((self.sentences[idx], float(similarities[idx])))
         return results
     
     def _local_llm_reasoning(self, question: str, choices: Dict[str, str], evidence: List[str]) -> Tuple[List[str], float, List[str]]:
@@ -431,12 +455,18 @@ Answer:"""
             evidence_embeddings = self.embedding_model.encode(evidence_texts)
             
             # Calculate semantic similarity
-            similarities = cosine_similarity(choice_embeddings, evidence_embeddings)
+            if len(choice_embeddings) > 0 and len(evidence_embeddings) > 0:
+                similarities = cosine_similarity(choice_embeddings, evidence_embeddings)
+            else:
+                similarities = np.zeros((len(choices), len(evidence_texts)))
             
             # Score each choice
             for i, (choice_label, choice_text) in enumerate(choices.items()):
                 # Weighted average similarity with evidence
-                choice_score = np.mean(similarities[i]) * 0.7  # Base semantic similarity
+                if similarities.size > 0 and i < similarities.shape[0]:
+                    choice_score = float(np.mean(similarities[i])) * 0.7  # Base semantic similarity
+                else:
+                    choice_score = 0.0
                 
                 # Bonus for keyword overlap
                 question_words = set(question.lower().split())
@@ -616,14 +646,17 @@ Answer:"""
         with open(analysis_file, 'w', encoding='utf-8') as f:
             analysis = []
             for result in results:
+                # Convert numpy types to Python types for JSON serialization
+                confidence = float(result.confidence) if hasattr(result.confidence, 'item') else result.confidence
+                
                 analysis.append({
-                    'id': result.id,
-                    'question': result.question[:100],
-                    'predicted_answers': result.predicted_answers,
-                    'confidence': result.confidence,
-                    'method_used': result.method_used,
-                    'evidence_count': len(result.evidence),
-                    'reasoning_steps': len(result.reasoning_chain)
+                    'id': int(result.id),
+                    'question': str(result.question[:100]),
+                    'predicted_answers': [str(ans) for ans in result.predicted_answers],
+                    'confidence': float(confidence),
+                    'method_used': str(result.method_used),
+                    'evidence_count': int(len(result.evidence)),
+                    'reasoning_steps': int(len(result.reasoning_chain))
                 })
             json.dump(analysis, f, indent=2, ensure_ascii=False)
         
