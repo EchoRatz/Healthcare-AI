@@ -6,3 +6,7 @@
 2025-08-01 08:55:49,852 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
 2025-08-01 08:55:49,852 - database.search_engine - INFO - Initialized search engine
 2025-08-01 08:55:49,853 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 08:59:41,949 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 08:59:47,984 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 08:59:47,984 - database.search_engine - INFO - Initialized search engine
+2025-08-01 08:59:47,985 - rag.rag_pipeline - INFO - Initialized RAG pipeline
