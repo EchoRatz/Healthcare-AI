@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, Response
 import os
 import asyncio
 import re
@@ -11,13 +11,13 @@ qa_system = ImprovedHealthcareQA()
 # Check Llama 3.1 availability and load documents
 if not qa_system.check_llama31():
     raise RuntimeError("Llama 3.1 is not available. Ensure 'ollama serve' is running.")
-qa_system.load_knowledge_base()  # Load the knowledge base
+qa_system.load_knowledge_base()
 
 # Initialize async session
 async def init_system():
     try:
         await qa_system.initialize()
-        print("✅ Production Healthcare AI API initialized successfully")
+        print("✅ Healthcare AI API with readable responses initialized successfully")
     except Exception as e:
         print(f"❌ Initialization failed: {e}")
         raise e
@@ -26,10 +26,6 @@ async def init_system():
 asyncio.run(init_system())
 
 app = Flask(__name__)
-
-# Configure Flask to return readable JSON
-app.config['JSON_AS_ASCII'] = False
-app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 
 def parse_question_production(question_text: str):
     """Production-grade question parsing for Thai healthcare questions"""
@@ -59,7 +55,7 @@ def parse_question_production(question_text: str):
 @app.route("/eval", methods=["POST"])
 def evaluate_question():
     """
-    Production API endpoint for healthcare question evaluation.
+    API endpoint that uses your LLM and returns readable responses
     
     Request Body:
     {
@@ -69,32 +65,44 @@ def evaluate_question():
     Response Body:
     {
         "answer": "ค",
-        "reason": "หากมีอาการปวดท้องและอาเจียน ควรไปพบแพทย์ที่ แผนกอายุรกรรม (Internal Medicine) ดังนั้น จึงตอบข้อ ค."
+        "reason": "หากมีอาการปวดท้องและอาเจียน ควรไปพบแพทย์ที่แผนกฉุกเฉิน (Emergency) เพื่อรับการรักษาทันที"
     }
     """
     data = request.get_json()
     if not data or "question" not in data:
-        return jsonify({"error": "Invalid input. 'question' key is required."}), 400
+        error_response = {"error": "Invalid input. 'question' key is required."}
+        return Response(
+            json.dumps(error_response, ensure_ascii=False, indent=2),
+            status=400,
+            mimetype='application/json; charset=utf-8'
+        )
 
     question = data["question"]
     if not isinstance(question, str):
-        return jsonify({"error": "'question' must be a string."}), 400
+        error_response = {"error": "'question' must be a string."}
+        return Response(
+            json.dumps(error_response, ensure_ascii=False, indent=2),
+            status=400,
+            mimetype='application/json; charset=utf-8'
+        )
 
     try:
         # Parse the question and extract choices
         parsed_question, choices = parse_question_production(question)
         
         if not parsed_question or not choices:
-            return (
-                jsonify({"error": "Failed to parse the question or extract choices."}),
-                400,
+            error_response = {"error": "Failed to parse the question or extract choices."}
+            return Response(
+                json.dumps(error_response, ensure_ascii=False, indent=2),
+                status=400,
+                mimetype='application/json; charset=utf-8'
             )
 
-        # Get context for the question using optimized system
+        # Get context for the question using your optimized system
         analysis = qa_system.analyze_question(parsed_question)
         context = qa_system.search_context(analysis)
 
-        # Query the optimized LLM with context
+        # Query your LLM with context
         async def query_async():
             return await qa_system.query_llama31_enhanced(parsed_question, choices, context)
         
@@ -144,7 +152,7 @@ def evaluate_question():
             
             answers, confidence, llm_response = asyncio.run(direct_query())
 
-        # Use AI agent's answer and generate reasoning
+        # Use your AI agent's answer and generate reasoning
         if answers:
             answer = answers[0]
             choice_text = choices.get(answer, "")
@@ -157,7 +165,7 @@ def evaluate_question():
                 if "คำตอบ:" in reason:
                     reason = reason.split("คำตอบ:")[0].strip()
             else:
-                # Use the optimized system's validation for reasoning
+                # Use your optimized system's validation for reasoning
                 validation = qa_system.validate_answer_enhanced(parsed_question, choices, answers, context)
                 reason = validation.reasoning if validation.reasoning else f"ตามการวิเคราะห์ของระบบ AI ควรเลือกข้อ {answer} ({choice_text})"
         else:
@@ -195,7 +203,8 @@ def health_check():
         "status": "OK",
         "llm_available": qa_system.check_llama31(),
         "knowledge_base_loaded": len(qa_system.knowledge_base) > 0,
-        "mcp_available": qa_system.mcp_available
+        "mcp_available": qa_system.mcp_available,
+        "message": "Healthcare AI API with readable responses is running"
     }
     
     return Response(
