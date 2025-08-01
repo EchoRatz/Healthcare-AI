@@ -78,7 +78,7 @@ def evaluate_question():
             reasoning = f"Based on the question and context, the most appropriate answer is '{answers[0] if answers else 'No answer found'}'."
 
         return jsonify({
-            "answer": answers[0] if answers else "No answer found", 
+            "answer": answers[0], 
             "reason": reasoning, 
             "confidence": confidence,
             "choices": choices
