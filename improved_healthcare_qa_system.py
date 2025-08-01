@@ -61,22 +61,19 @@ class ImprovedHealthcareQA:
         self.mcp_available = MCP_AVAILABLE
 
     async def initialize_mcp(self):
-        """Initialize MCP client if available"""
+        """Initialize MCP client if available (non-blocking)"""
         if not self.mcp_available:
-            print("⚠️  MCP not available - skipping MCP initialization")
             return False
         
         try:
             self.mcp_client = WorkingMCPClient()
             await self.mcp_client.initialize()
             if self.mcp_client.initialized:
-                print("✅ MCP client initialized successfully")
                 return True
             else:
-                print("❌ Failed to initialize MCP client")
                 return False
         except Exception as e:
-            print(f"❌ MCP initialization error: {e}")
+            print(f"⚠️  MCP initialization failed: {e}")
             self.mcp_available = False
             return False
 
@@ -586,10 +583,18 @@ class ImprovedHealthcareQA:
 
         print(f"✅ Using model: {self.model_name}")
 
-        # Initialize MCP if available
+        # Initialize MCP if available (non-blocking)
         if self.mcp_available:
-            print("🔗 Initializing MCP integration...")
-            await self.initialize_mcp()
+            print("🔗 Attempting MCP integration (optional)...")
+            try:
+                await self.initialize_mcp()
+                if self.mcp_client and self.mcp_client.initialized:
+                    print("✅ MCP integration successful")
+                else:
+                    print("⚠️  MCP integration failed - continuing without MCP")
+            except Exception as e:
+                print(f"⚠️  MCP initialization error - continuing without MCP: {e}")
+                self.mcp_available = False
         else:
             print("⚠️  Running without MCP integration")
 
@@ -683,35 +688,108 @@ class ImprovedHealthcareQA:
         
         print(f"💾 Results saved to: {output_file}")
 
+    def interactive_mode(self):
+        """Simple interactive mode without external dependencies"""
+        print("🏥 Healthcare AI - Interactive Mode")
+        print("=" * 50)
+        print("Ask healthcare questions! Type 'quit' to exit.")
+        print("Note: This mode uses local knowledge base only.")
+        print("-" * 50)
+        
+        # Load knowledge base
+        self.load_knowledge_base()
+        print(f"✅ Loaded knowledge base with {len(self.knowledge_base)} keywords")
+        
+        while True:
+            try:
+                question = input("\n💬 Your question: ").strip()
+                
+                if question.lower() in ['quit', 'exit', 'q']:
+                    print("👋 Goodbye!")
+                    break
+                
+                if not question:
+                    continue
+                
+                # Analyze question
+                analysis = self.analyze_question(question)
+                
+                # Search for context
+                context = self.search_context(analysis)
+                
+                # Simple answer based on context
+                if context:
+                    # Extract relevant information
+                    relevant_info = context[:500] + "..." if len(context) > 500 else context
+                    print(f"📋 Relevant information: {relevant_info}")
+                    
+                    # Simple keyword matching
+                    keywords = self._extract_keywords(question)
+                    matched_keywords = [k for k in keywords if k in self.knowledge_base]
+                    
+                    if matched_keywords:
+                        print(f"🔍 Found relevant keywords: {', '.join(matched_keywords[:5])}")
+                        
+                        # Show sample content for first keyword
+                        first_keyword = matched_keywords[0]
+                        if first_keyword in self.knowledge_base:
+                            sample_content = self.knowledge_base[first_keyword][0]['content'][:300] + "..."
+                            print(f"📄 Sample content: {sample_content}")
+                    else:
+                        print("❓ No specific matches found in knowledge base")
+                else:
+                    print("❓ No relevant information found")
+                    
+            except KeyboardInterrupt:
+                print("\n👋 Goodbye!")
+                break
+            except Exception as e:
+                print(f"❌ Error: {e}")
+
 async def main():
     """Main function"""
-    print("🏥 IMPROVED HEALTHCARE Q&A SYSTEM WITH MCP INTEGRATION")
-    print("=" * 60)
-
+    print("🏥 IMPROVED HEALTHCARE Q&A SYSTEM")
+    print("=" * 50)
+    print("Choose an option:")
+    print("1. Interactive mode (no external dependencies)")
+    print("2. Process test file (requires LLM)")
+    print("3. Exit")
+    
+    choice = input("\nEnter your choice (1-3): ").strip()
+    
     qa_system = ImprovedHealthcareQA()
+    
+    if choice == "1":
+        # Interactive mode - no external dependencies
+        qa_system.interactive_mode()
+    elif choice == "2":
+        # Process test file
+        print("\n🔗 Processing test file with enhanced features...")
+        test_file = "Healthcare-AI-Refactored/src/infrastructure/test.csv"
+        results = await qa_system.process_questions_enhanced(test_file)
 
-    # Process questions
-    test_file = "Healthcare-AI-Refactored/src/infrastructure/test.csv"
-    results = await qa_system.process_questions_enhanced(test_file)
+        if results:
+            # Save results
+            output_file = "improved_healthcare_submission.csv"
+            qa_system.save_results(results, output_file)
 
-    if results:
-        # Save results
-        output_file = "improved_healthcare_submission.csv"
-        qa_system.save_results(results, output_file)
+            # Print summary
+            total_questions = len(results)
+            high_confidence = sum(1 for r in results if r['confidence'] > 0.7)
+            validation_passed = sum(1 for r in results if r['validation_passed'])
+            mcp_used = sum(1 for r in results if r.get('mcp_used', False))
 
-        # Print summary
-        total_questions = len(results)
-        high_confidence = sum(1 for r in results if r['confidence'] > 0.7)
-        validation_passed = sum(1 for r in results if r['validation_passed'])
-        mcp_used = sum(1 for r in results if r.get('mcp_used', False))
-
-        print(f"\n📊 SUMMARY:")
-        print(f"  Total questions: {total_questions}")
-        print(f"  High confidence answers: {high_confidence} ({high_confidence/total_questions*100:.1f}%)")
-        print(f"  Validation passed: {validation_passed} ({validation_passed/total_questions*100:.1f}%)")
-        print(f"  MCP integration used: {mcp_used} ({mcp_used/total_questions*100:.1f}%)")
+            print(f"\n📊 SUMMARY:")
+            print(f"  Total questions: {total_questions}")
+            print(f"  High confidence answers: {high_confidence} ({high_confidence/total_questions*100:.1f}%)")
+            print(f"  Validation passed: {validation_passed} ({validation_passed/total_questions*100:.1f}%)")
+            print(f"  MCP integration used: {mcp_used} ({mcp_used/total_questions*100:.1f}%)")
+        else:
+            print("❌ No results generated")
+    elif choice == "3":
+        print("👋 Goodbye!")
     else:
-        print("❌ No results generated")
+        print("❌ Invalid choice")
 
 if __name__ == "__main__":
     asyncio.run(main()) 
