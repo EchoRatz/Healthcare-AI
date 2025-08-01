@@ -5,3 +5,175 @@
 2025-08-01 16:10:58,303 - __main__ - INFO - Starting Healthcare-AI system
 2025-08-01 16:11:13,315 - core.use_cases.ProcessQuestion - INFO - Processing question: fu...
 2025-08-01 16:11:13,316 - core.use_cases.ProcessQuestion - WARNING - No relevant documents found
+2025-08-01 23:22:47,866 - EnhancedSystemFactory - INFO - Loaded configuration from config\enhanced_system.json
+2025-08-01 23:22:47,867 - __main__ - INFO - Setting up enhanced chain-of-thought system...
+2025-08-01 23:22:47,868 - EnhancedSystemFactory - INFO - Created LLM client with model: llama2:70b
+2025-08-01 23:22:47,869 - EnhancedSystemFactory - INFO - Created query planner
+2025-08-01 23:22:47,871 - EnhancedSystemFactory - INFO - Created MCP connector for http://localhost:3000
+2025-08-01 23:22:47,872 - EnhancedSystemFactory - INFO - Created PDF connector with base path: data/documents
+2025-08-01 23:22:47,873 - EnhancedSystemFactory - INFO - Created text connector with base path: data/documents
+2025-08-01 23:22:50,175 - EnhancedSystemFactory - INFO - Created enhanced chain-of-thought engine
+2025-08-01 23:22:50,176 - EnhancedSystemFactory - INFO - Created LLM client with model: llama2:70b
+2025-08-01 23:22:50,176 - EnhancedSystemFactory - INFO - Created LLM client with model: llama2:70b
+2025-08-01 23:22:50,178 - EnhancedSystemFactory - INFO - Created query planner
+2025-08-01 23:22:50,178 - EnhancedSystemFactory - INFO - Created MCP connector for http://localhost:3000
+2025-08-01 23:22:50,179 - EnhancedSystemFactory - INFO - Created PDF connector with base path: data/documents
+2025-08-01 23:22:50,179 - EnhancedSystemFactory - INFO - Created text connector with base path: data/documents
+2025-08-01 23:22:50,180 - EnhancedSystemFactory - INFO - Created LLM client with model: llama2:70b
+2025-08-01 23:22:50,182 - EnhancedSystemFactory - INFO - Created query planner
+2025-08-01 23:22:50,182 - EnhancedSystemFactory - INFO - Created MCP connector for http://localhost:3000
+2025-08-01 23:22:50,183 - EnhancedSystemFactory - INFO - Created PDF connector with base path: data/documents
+2025-08-01 23:22:50,184 - EnhancedSystemFactory - INFO - Created text connector with base path: data/documents
+2025-08-01 23:22:52,249 - EnhancedSystemFactory - INFO - Created enhanced chain-of-thought engine
+2025-08-01 23:22:52,250 - __main__ - INFO - Enhanced system setup complete!
+2025-08-01 23:22:52,250 - __main__ - INFO - Running demo queries...
+2025-08-01 23:22:52,251 - __main__ - INFO - Processing 5 queries in batch...
+2025-08-01 23:22:52,252 - ChainOfThoughtEngine - INFO - Processing query with chain-of-thought: What are the main symptoms of diabetes?...
+2025-08-01 23:22:52,252 - OllamaQueryPlanner - INFO - Planning retrieval for query: What are the main symptoms of diabetes?...
+2025-08-01 23:22:52,286 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:22:52,287 - OllamaQueryPlanner - ERROR - Failed to generate plan
+2025-08-01 23:22:52,287 - ChainOfThoughtEngine - INFO - Generated plan: {'mcp_requests': 0, 'pdf_requests': 0, 'text_requests': 0}
+2025-08-01 23:22:52,288 - ChainOfThoughtEngine - INFO - Retrieved data from 4 sources
+2025-08-01 23:22:52,294 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:22:52,296 - ChainOfThoughtEngine - INFO - Successfully processed query with chain-of-thought
+2025-08-01 23:22:52,298 - ChainOfThoughtEngine - INFO - Processing query with chain-of-thought: How do I configure the system for optimal performance?...
+2025-08-01 23:22:52,299 - OllamaQueryPlanner - INFO - Planning retrieval for query: How do I configure the system for optimal performance?...
+2025-08-01 23:22:52,305 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:22:52,306 - OllamaQueryPlanner - ERROR - Failed to generate plan
+2025-08-01 23:22:52,306 - ChainOfThoughtEngine - INFO - Generated plan: {'mcp_requests': 0, 'pdf_requests': 0, 'text_requests': 0}
+2025-08-01 23:22:52,306 - ChainOfThoughtEngine - INFO - Retrieved data from 4 sources
+2025-08-01 23:22:52,314 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:22:52,314 - ChainOfThoughtEngine - INFO - Successfully processed query with chain-of-thought
+2025-08-01 23:22:52,314 - ChainOfThoughtEngine - INFO - Processing query with chain-of-thought: What are the latest treatment guidelines for hypertension?...
+2025-08-01 23:22:52,315 - OllamaQueryPlanner - INFO - Planning retrieval for query: What are the latest treatment guidelines for hypertension?...
+2025-08-01 23:22:52,320 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:22:52,321 - OllamaQueryPlanner - ERROR - Failed to generate plan
+2025-08-01 23:22:52,321 - ChainOfThoughtEngine - INFO - Generated plan: {'mcp_requests': 0, 'pdf_requests': 0, 'text_requests': 0}
+2025-08-01 23:22:52,322 - ChainOfThoughtEngine - INFO - Retrieved data from 4 sources
+2025-08-01 23:22:52,328 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:22:52,330 - ChainOfThoughtEngine - INFO - Successfully processed query with chain-of-thought
+2025-08-01 23:22:52,331 - ChainOfThoughtEngine - INFO - Processing query with chain-of-thought: Can you explain the difference between Type 1 and Type 2 diabetes?...
+2025-08-01 23:22:52,332 - OllamaQueryPlanner - INFO - Planning retrieval for query: Can you explain the difference between Type 1 and Type 2 diabetes?...
+2025-08-01 23:22:52,342 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:22:52,343 - OllamaQueryPlanner - ERROR - Failed to generate plan
+2025-08-01 23:22:52,343 - ChainOfThoughtEngine - INFO - Generated plan: {'mcp_requests': 0, 'pdf_requests': 0, 'text_requests': 0}
+2025-08-01 23:22:52,344 - ChainOfThoughtEngine - INFO - Retrieved data from 4 sources
+2025-08-01 23:22:52,349 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:22:52,350 - ChainOfThoughtEngine - INFO - Successfully processed query with chain-of-thought
+2025-08-01 23:22:52,350 - ChainOfThoughtEngine - INFO - Processing query with chain-of-thought: What are the recommended daily exercise guidelines for adults?...
+2025-08-01 23:22:52,350 - OllamaQueryPlanner - INFO - Planning retrieval for query: What are the recommended daily exercise guidelines for adults?...
+2025-08-01 23:22:52,359 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:22:52,361 - OllamaQueryPlanner - ERROR - Failed to generate plan
+2025-08-01 23:22:52,361 - ChainOfThoughtEngine - INFO - Generated plan: {'mcp_requests': 0, 'pdf_requests': 0, 'text_requests': 0}
+2025-08-01 23:22:52,362 - ChainOfThoughtEngine - INFO - Retrieved data from 4 sources
+2025-08-01 23:22:52,369 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:22:52,370 - ChainOfThoughtEngine - INFO - Successfully processed query with chain-of-thought
+2025-08-01 23:22:52,370 - __main__ - INFO - Batch processing completed in 0.12 seconds
+2025-08-01 23:23:07,930 - EnhancedSystemFactory - INFO - Loaded configuration from config\enhanced_system.json
+2025-08-01 23:23:07,930 - __main__ - INFO - Setting up enhanced chain-of-thought system...
+2025-08-01 23:23:07,931 - EnhancedSystemFactory - INFO - Created LLM client with model: llama2:70b
+2025-08-01 23:23:07,931 - EnhancedSystemFactory - INFO - Created query planner
+2025-08-01 23:23:07,931 - EnhancedSystemFactory - INFO - Created MCP connector for http://localhost:3000
+2025-08-01 23:23:07,932 - EnhancedSystemFactory - INFO - Created PDF connector with base path: data/documents
+2025-08-01 23:23:07,932 - EnhancedSystemFactory - INFO - Created text connector with base path: data/documents
+2025-08-01 23:23:10,013 - EnhancedSystemFactory - INFO - Created enhanced chain-of-thought engine
+2025-08-01 23:23:10,014 - EnhancedSystemFactory - INFO - Created LLM client with model: llama2:70b
+2025-08-01 23:23:10,014 - EnhancedSystemFactory - INFO - Created LLM client with model: llama2:70b
+2025-08-01 23:23:10,015 - EnhancedSystemFactory - INFO - Created query planner
+2025-08-01 23:23:10,016 - EnhancedSystemFactory - INFO - Created MCP connector for http://localhost:3000
+2025-08-01 23:23:10,017 - EnhancedSystemFactory - INFO - Created PDF connector with base path: data/documents
+2025-08-01 23:23:10,017 - EnhancedSystemFactory - INFO - Created text connector with base path: data/documents
+2025-08-01 23:23:10,017 - EnhancedSystemFactory - INFO - Created LLM client with model: llama2:70b
+2025-08-01 23:23:10,018 - EnhancedSystemFactory - INFO - Created query planner
+2025-08-01 23:23:10,018 - EnhancedSystemFactory - INFO - Created MCP connector for http://localhost:3000
+2025-08-01 23:23:10,018 - EnhancedSystemFactory - INFO - Created PDF connector with base path: data/documents
+2025-08-01 23:23:10,019 - EnhancedSystemFactory - INFO - Created text connector with base path: data/documents
+2025-08-01 23:23:12,096 - EnhancedSystemFactory - INFO - Created enhanced chain-of-thought engine
+2025-08-01 23:23:12,097 - __main__ - INFO - Enhanced system setup complete!
+2025-08-01 23:23:23,539 - __main__ - INFO - Processing query: อะไรคือ 1+1
+2025-08-01 23:23:23,540 - ChainOfThoughtEngine - INFO - Processing query with chain-of-thought: อะไรคือ 1+1...
+2025-08-01 23:23:23,541 - OllamaQueryPlanner - INFO - Planning retrieval for query: อะไรคือ 1+1...
+2025-08-01 23:23:23,548 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:23:23,548 - OllamaQueryPlanner - ERROR - Failed to generate plan
+2025-08-01 23:23:23,549 - ChainOfThoughtEngine - INFO - Generated plan: {'mcp_requests': 0, 'pdf_requests': 0, 'text_requests': 0}
+2025-08-01 23:23:23,549 - ChainOfThoughtEngine - INFO - Retrieved data from 4 sources
+2025-08-01 23:23:23,555 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:23:23,555 - ChainOfThoughtEngine - INFO - Successfully processed query with chain-of-thought
+2025-08-01 23:23:23,556 - __main__ - INFO - Query processed in 0.02 seconds
+2025-08-01 23:23:37,681 - __main__ - INFO - Processing query: ทำไมตอบแบบบนั้น
+2025-08-01 23:23:37,682 - ChainOfThoughtEngine - INFO - Processing query with chain-of-thought: ทำไมตอบแบบบนั้น...
+2025-08-01 23:23:37,682 - OllamaQueryPlanner - INFO - Planning retrieval for query: ทำไมตอบแบบบนั้น...
+2025-08-01 23:23:37,688 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:23:37,689 - OllamaQueryPlanner - ERROR - Failed to generate plan
+2025-08-01 23:23:37,689 - ChainOfThoughtEngine - INFO - Generated plan: {'mcp_requests': 0, 'pdf_requests': 0, 'text_requests': 0}
+2025-08-01 23:23:37,690 - ChainOfThoughtEngine - INFO - Retrieved data from 4 sources
+2025-08-01 23:23:37,698 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:23:37,698 - ChainOfThoughtEngine - INFO - Successfully processed query with chain-of-thought
+2025-08-01 23:23:37,699 - __main__ - INFO - Query processed in 0.02 seconds
+2025-08-01 23:29:54,089 - EnhancedSystemFactory - INFO - Loaded configuration from config\enhanced_system.json
+2025-08-01 23:29:54,090 - __main__ - INFO - Setting up enhanced chain-of-thought system...
+2025-08-01 23:29:54,090 - EnhancedSystemFactory - INFO - Created LLM client with model: llama2:70b
+2025-08-01 23:29:54,090 - EnhancedSystemFactory - INFO - Created query planner
+2025-08-01 23:29:54,091 - EnhancedSystemFactory - INFO - Created MCP connector for http://localhost:3000
+2025-08-01 23:29:54,091 - PDFConnector - WARNING - PyPDF2 not available. Install with: pip install PyPDF2
+2025-08-01 23:29:54,091 - EnhancedSystemFactory - INFO - Created PDF connector with base path: data/documents
+2025-08-01 23:29:54,091 - EnhancedSystemFactory - INFO - Created text connector with base path: data/documents
+2025-08-01 23:29:56,214 - EnhancedSystemFactory - INFO - Created enhanced chain-of-thought engine
+2025-08-01 23:29:56,215 - EnhancedSystemFactory - INFO - Created LLM client with model: llama2:70b
+2025-08-01 23:29:56,216 - EnhancedSystemFactory - INFO - Created LLM client with model: llama2:70b
+2025-08-01 23:29:56,216 - EnhancedSystemFactory - INFO - Created query planner
+2025-08-01 23:29:56,217 - EnhancedSystemFactory - INFO - Created MCP connector for http://localhost:3000
+2025-08-01 23:29:56,218 - PDFConnector - WARNING - PyPDF2 not available. Install with: pip install PyPDF2
+2025-08-01 23:29:56,218 - EnhancedSystemFactory - INFO - Created PDF connector with base path: data/documents
+2025-08-01 23:29:56,219 - EnhancedSystemFactory - INFO - Created text connector with base path: data/documents
+2025-08-01 23:29:56,220 - EnhancedSystemFactory - INFO - Created LLM client with model: llama2:70b
+2025-08-01 23:29:56,220 - EnhancedSystemFactory - INFO - Created query planner
+2025-08-01 23:29:56,221 - EnhancedSystemFactory - INFO - Created MCP connector for http://localhost:3000
+2025-08-01 23:29:56,222 - PDFConnector - WARNING - PyPDF2 not available. Install with: pip install PyPDF2
+2025-08-01 23:29:56,223 - EnhancedSystemFactory - INFO - Created PDF connector with base path: data/documents
+2025-08-01 23:29:56,224 - EnhancedSystemFactory - INFO - Created text connector with base path: data/documents
+2025-08-01 23:29:58,305 - EnhancedSystemFactory - INFO - Created enhanced chain-of-thought engine
+2025-08-01 23:29:58,305 - __main__ - INFO - Enhanced system setup complete!
+2025-08-01 23:29:58,306 - __main__ - INFO - Running demo queries...
+2025-08-01 23:29:58,306 - __main__ - INFO - Processing 5 queries in batch...
+2025-08-01 23:29:58,308 - ChainOfThoughtEngine - INFO - Processing query with chain-of-thought: What are the main symptoms of diabetes?...
+2025-08-01 23:29:58,310 - OllamaQueryPlanner - INFO - Planning retrieval for query: What are the main symptoms of diabetes?...
+2025-08-01 23:29:58,319 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:29:58,320 - OllamaQueryPlanner - ERROR - Failed to generate plan
+2025-08-01 23:29:58,322 - ChainOfThoughtEngine - INFO - Generated plan: {'mcp_requests': 0, 'pdf_requests': 0, 'text_requests': 0}
+2025-08-01 23:29:58,323 - ChainOfThoughtEngine - INFO - Retrieved data from 4 sources
+2025-08-01 23:29:58,341 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:29:58,341 - ChainOfThoughtEngine - INFO - Successfully processed query with chain-of-thought
+2025-08-01 23:29:58,342 - ChainOfThoughtEngine - INFO - Processing query with chain-of-thought: How do I configure the system for optimal performance?...
+2025-08-01 23:29:58,342 - OllamaQueryPlanner - INFO - Planning retrieval for query: How do I configure the system for optimal performance?...
+2025-08-01 23:29:58,352 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:29:58,352 - OllamaQueryPlanner - ERROR - Failed to generate plan
+2025-08-01 23:29:58,353 - ChainOfThoughtEngine - INFO - Generated plan: {'mcp_requests': 0, 'pdf_requests': 0, 'text_requests': 0}
+2025-08-01 23:29:58,353 - ChainOfThoughtEngine - INFO - Retrieved data from 4 sources
+2025-08-01 23:29:58,359 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:29:58,359 - ChainOfThoughtEngine - INFO - Successfully processed query with chain-of-thought
+2025-08-01 23:29:58,360 - ChainOfThoughtEngine - INFO - Processing query with chain-of-thought: What are the latest treatment guidelines for hypertension?...
+2025-08-01 23:29:58,360 - OllamaQueryPlanner - INFO - Planning retrieval for query: What are the latest treatment guidelines for hypertension?...
+2025-08-01 23:29:58,365 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:29:58,365 - OllamaQueryPlanner - ERROR - Failed to generate plan
+2025-08-01 23:29:58,366 - ChainOfThoughtEngine - INFO - Generated plan: {'mcp_requests': 0, 'pdf_requests': 0, 'text_requests': 0}
+2025-08-01 23:29:58,366 - ChainOfThoughtEngine - INFO - Retrieved data from 4 sources
+2025-08-01 23:29:58,371 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:29:58,372 - ChainOfThoughtEngine - INFO - Successfully processed query with chain-of-thought
+2025-08-01 23:29:58,372 - ChainOfThoughtEngine - INFO - Processing query with chain-of-thought: Can you explain the difference between Type 1 and Type 2 diabetes?...
+2025-08-01 23:29:58,372 - OllamaQueryPlanner - INFO - Planning retrieval for query: Can you explain the difference between Type 1 and Type 2 diabetes?...
+2025-08-01 23:29:58,377 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:29:58,377 - OllamaQueryPlanner - ERROR - Failed to generate plan
+2025-08-01 23:29:58,377 - ChainOfThoughtEngine - INFO - Generated plan: {'mcp_requests': 0, 'pdf_requests': 0, 'text_requests': 0}
+2025-08-01 23:29:58,377 - ChainOfThoughtEngine - INFO - Retrieved data from 4 sources
+2025-08-01 23:29:58,383 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:29:58,384 - ChainOfThoughtEngine - INFO - Successfully processed query with chain-of-thought
+2025-08-01 23:29:58,384 - ChainOfThoughtEngine - INFO - Processing query with chain-of-thought: What are the recommended daily exercise guidelines for adults?...
+2025-08-01 23:29:58,384 - OllamaQueryPlanner - INFO - Planning retrieval for query: What are the recommended daily exercise guidelines for adults?...
+2025-08-01 23:29:58,389 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:29:58,389 - OllamaQueryPlanner - ERROR - Failed to generate plan
+2025-08-01 23:29:58,390 - ChainOfThoughtEngine - INFO - Generated plan: {'mcp_requests': 0, 'pdf_requests': 0, 'text_requests': 0}
+2025-08-01 23:29:58,390 - ChainOfThoughtEngine - INFO - Retrieved data from 4 sources
+2025-08-01 23:29:58,395 - OllamaClient - ERROR - Ollama API error: 404 - {"error":"model 'llama2:70b' not found"}
+2025-08-01 23:29:58,396 - ChainOfThoughtEngine - INFO - Successfully processed query with chain-of-thought
+2025-08-01 23:29:58,396 - __main__ - INFO - Batch processing completed in 0.09 seconds

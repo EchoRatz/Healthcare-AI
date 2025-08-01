@@ -1,0 +1,60 @@
+{
+  "llm": {
+    "provider": "ollama",
+    "model_name": "llama2:70b",
+    "base_url": "http://localhost:11434",
+    "temperature": 0.7,
+    "max_tokens": 2000,
+    "quantization": "q8_0",
+    "context_window": 8192
+  },
+  "query_planner": {
+    "temperature": 0.1,
+    "max_tokens": 1000,
+    "planning_timeout": 30
+  },
+  "connectors": {
+    "mcp": {
+      "enabled": true,
+      "server_url": "http://localhost:3000",
+      "auth_token": null,
+      "timeout": 30
+    },
+    "pdf": {
+      "enabled": true,
+      "base_path": "data/documents",
+      "max_file_size_mb": 50,
+      "supported_extensions": [".pdf"]
+    },
+    "text": {
+      "enabled": true,
+      "base_path": "data/documents",
+      "supported_extensions": [".txt", ".md", ".csv", ".json", ".yaml", ".yml"],
+      "max_file_size_mb": 10
+    }
+  },
+  "processing": {
+    "batch_size": 5,
+    "max_concurrent_requests": 10,
+    "retrieval_timeout": 60,
+    "reasoning_timeout": 120
+  },
+  "performance": {
+    "enable_caching": true,
+    "cache_ttl_seconds": 3600,
+    "enable_parallel_retrieval": true,
+    "max_context_length": 4000
+  },
+  "logging": {
+    "level": "INFO",
+    "log_plans": true,
+    "log_retrieval_details": true,
+    "log_reasoning_steps": false
+  },
+  "hardware": {
+    "gpu_memory_gb": 40,
+    "system_memory_gb": 64,
+    "enable_quantization": true,
+    "preferred_precision": "q8_0"
+  }
+} 
