@@ -1,0 +1,13 @@
+{
+  "filename": "QA.csv",
+  "processed_at": "2025-08-01T14:10:35.167347",
+  "thread_id": "thread_001",
+  "rows": 999,
+  "columns": 2,
+  "column_names": [
+    "Question",
+    "Answer"
+  ],
+  "processing_method": "CPU",
+  "statistics": {}
+}

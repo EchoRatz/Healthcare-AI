@@ -1,0 +1,33 @@
+# CUDA Dependencies for GPU-accelerated CSV processing
+
+# Core CUDA libraries
+cupy-cuda11x>=12.0.0  # GPU-accelerated NumPy replacement
+cudf-cu11>=23.0.0     # GPU-accelerated pandas replacement
+
+# Alternative CUDA libraries (choose based on your CUDA version)
+# cupy-cuda12x>=12.0.0  # For CUDA 12.x
+# cudf-cu12>=23.0.0     # For CUDA 12.x
+
+# PyTorch with CUDA support (optional, for additional ML operations)
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Core data processing libraries
+pandas>=1.5.0
+numpy>=1.21.0
+
+# Additional GPU libraries (optional)
+# rapids-cudf>=23.0.0    # Full RAPIDS suite
+# rapids-cuml>=23.0.0    # GPU-accelerated ML
+
+# Installation notes:
+# 1. Install CUDA toolkit first (11.x or 12.x)
+# 2. Install cupy: pip install cupy-cuda11x
+# 3. Install cudf: pip install cudf-cu11
+# 4. Install PyTorch: pip install torch torchvision
+
+# For conda installation:
+# conda install -c conda-forge cupy cudf pytorch torchvision
+
+# Check CUDA availability:
+# python -c "import cupy as cp; print(cp.cuda.runtime.getDeviceCount())" 
