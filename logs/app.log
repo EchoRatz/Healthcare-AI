@@ -6,3 +6,114 @@
 2025-08-01 08:55:49,852 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
 2025-08-01 08:55:49,852 - database.search_engine - INFO - Initialized search engine
 2025-08-01 08:55:49,853 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 10:08:06,836 - __main__ - INFO - Initializing Healthcare-AI system...
+2025-08-01 10:08:06,837 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 10:08:13,350 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 10:08:13,351 - database.search_engine - INFO - Initialized search engine
+2025-08-01 10:08:13,352 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 10:08:13,611 - __main__ - INFO - System initialized with 5 documents
+2025-08-01 10:10:56,596 - __main__ - INFO - Initializing Healthcare-AI system...
+2025-08-01 10:10:56,596 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 10:11:03,629 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 10:11:03,630 - database.search_engine - INFO - Initialized search engine
+2025-08-01 10:11:03,631 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 10:11:03,827 - __main__ - INFO - System initialized with 5 documents
+2025-08-01 10:18:30,130 - __main__ - INFO - Shutting down Healthcare-AI system...
+2025-08-01 10:18:38,080 - __main__ - INFO - Initializing Healthcare-AI system...
+2025-08-01 10:18:38,080 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 10:18:44,384 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 10:18:44,385 - database.search_engine - INFO - Initialized search engine
+2025-08-01 10:18:44,386 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 10:18:44,565 - __main__ - INFO - System initialized with 5 documents
+2025-08-01 10:18:50,672 - __main__ - INFO - Extracted choices: {}
+2025-08-01 10:22:37,503 - __main__ - INFO - Shutting down Healthcare-AI system...
+2025-08-01 10:22:45,324 - __main__ - INFO - Initializing Healthcare-AI system...
+2025-08-01 10:22:45,325 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 10:22:52,355 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 10:22:52,357 - database.search_engine - INFO - Initialized search engine
+2025-08-01 10:22:52,358 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 10:22:52,564 - __main__ - INFO - System initialized with 5 documents
+2025-08-01 10:23:55,714 - __main__ - INFO - Input question: ??????????????????????? ?.??????????????? ?.????????????? ?.????????????????????????? ?.??????????
+2025-08-01 10:23:55,714 - __main__ - INFO - Extracted choices: {}
+2025-08-01 10:30:55,012 - __main__ - INFO - Input question: อะไรคือสิ่งสำคัญสำหรับสุขภาพ? ก.การนอนหลับเพียงพอ ข.การออกกำลังกาย ค.การรับประทานอาหารที่มีประโยชน์ ง.ทั้งหมดข้างต้น
+2025-08-01 10:30:55,012 - __main__ - INFO - Extracted choices: {}
+2025-08-01 11:03:52,402 - __main__ - INFO - Input question: อะไรคือสิ่งสำคัญสำหรับสุขภาพ? ก.การนอนหลับเพียงพอ ข.การออกกำลังกาย ค.การรับประทานอาหารที่มีประโยชน์ ง.ทั้งหมดข้างต้น
+2025-08-01 11:03:52,402 - __main__ - INFO - Extracted choices: {}
+2025-08-01 11:05:15,795 - __main__ - INFO - Shutting down Healthcare-AI system...
+2025-08-01 11:06:54,745 - __main__ - INFO - Initializing Healthcare-AI system...
+2025-08-01 11:06:54,746 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 11:07:03,868 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 11:07:03,869 - database.search_engine - INFO - Initialized search engine
+2025-08-01 11:07:03,870 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 11:07:04,060 - __main__ - INFO - System initialized with 5 documents
+2025-08-01 11:07:20,284 - __main__ - INFO - Input question: อะไรคือสิ่งสำคัญสำหรับสุขภาพ? ก.การนอนหลับเพียงพอ ข.การออกกำลังกาย ค.การรับประทานอาหารที่มีประโยชน์ ง.ทั้งหมดข้างต้น
+2025-08-01 11:07:20,286 - __main__ - INFO - Extracted choices: {'ก': 'การนอนหลับเพียงพอ', 'ข': 'การออกกำลังกาย', 'ค': 'การรับประทานอาหารที่มีประโยชน์', 'ง': 'ทั้งหมดข้างต้น'}
+2025-08-01 11:07:20,287 - __main__ - INFO - Processing question with 4 choices
+2025-08-01 11:10:47,932 - __main__ - INFO - Input question: อะไรคือสิ่งสำคัญสำหรับสุขภาพ? ก.การนอนหลับเพียงพอ ข.การออกกำลังกาย ค.การรับประทานอาหารที่มีประโยชน์ ง.ทั้งหมดข้างต้น
+2025-08-01 11:10:47,933 - __main__ - INFO - Extracted choices: {'ก': 'การนอนหลับเพียงพอ', 'ข': 'การออกกำลังกาย', 'ค': 'การรับประทานอาหารที่มีประโยชน์', 'ง': 'ทั้งหมดข้างต้น'}
+2025-08-01 11:10:47,934 - __main__ - INFO - Processing question with 4 choices
+2025-08-01 11:10:49,763 - __main__ - INFO - Input question: อะไรคือสิ่งสำคัญสำหรับสุขภาพ? ก.การนอนหลับเพียงพอ ข.การออกกำลังกาย ค.การรับประทานอาหารที่มีประโยชน์ ง.ทั้งหมดข้างต้น
+2025-08-01 11:10:49,764 - __main__ - INFO - Extracted choices: {'ก': 'การนอนหลับเพียงพอ', 'ข': 'การออกกำลังกาย', 'ค': 'การรับประทานอาหารที่มีประโยชน์', 'ง': 'ทั้งหมดข้างต้น'}
+2025-08-01 11:10:49,765 - __main__ - INFO - Processing question with 4 choices
+2025-08-01 11:10:51,085 - __main__ - INFO - Input question: อะไรคือสิ่งสำคัญสำหรับสุขภาพ? ก.การนอนหลับเพียงพอ ข.การออกกำลังกาย ค.การรับประทานอาหารที่มีประโยชน์ ง.ทั้งหมดข้างต้น
+2025-08-01 11:10:51,086 - __main__ - INFO - Extracted choices: {'ก': 'การนอนหลับเพียงพอ', 'ข': 'การออกกำลังกาย', 'ค': 'การรับประทานอาหารที่มีประโยชน์', 'ง': 'ทั้งหมดข้างต้น'}
+2025-08-01 11:10:51,086 - __main__ - INFO - Processing question with 4 choices
+2025-08-01 11:37:20,105 - __main__ - INFO - Shutting down Healthcare-AI system...
+2025-08-01 11:44:15,730 - src.api.api - INFO - Initializing Healthcare-AI system...
+2025-08-01 11:44:15,731 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 11:44:21,687 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 11:44:21,688 - database.search_engine - INFO - Initialized search engine
+2025-08-01 11:44:21,688 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 11:44:21,855 - src.api.api - INFO - System initialized with 5 documents
+2025-08-01 11:45:26,845 - src.api.api - INFO - Shutting down Healthcare-AI system...
+2025-08-01 11:45:32,816 - src.api.api - INFO - Initializing Healthcare-AI system...
+2025-08-01 11:45:32,817 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 11:45:37,844 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 11:45:37,844 - database.search_engine - INFO - Initialized search engine
+2025-08-01 11:45:37,844 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 11:45:38,056 - src.api.api - INFO - System initialized with 5 documents
+2025-08-01 11:45:44,045 - src.api.api - INFO - Initializing Healthcare-AI system...
+2025-08-01 11:45:44,046 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 11:45:48,822 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 11:45:48,822 - database.search_engine - INFO - Initialized search engine
+2025-08-01 11:45:48,822 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 11:45:49,050 - src.api.api - INFO - System initialized with 5 documents
+2025-08-01 11:49:57,319 - src.api.api - INFO - Initializing Healthcare-AI system...
+2025-08-01 11:49:57,320 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 11:50:02,106 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 11:50:02,107 - database.search_engine - INFO - Initialized search engine
+2025-08-01 11:50:02,107 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 11:50:02,327 - src.api.api - INFO - System initialized with 5 documents
+2025-08-01 11:50:34,642 - src.api.api - INFO - Input question: อะไรคือสิ่งสำคัญสำหรับสุขภาพ? ก.การนอนหลับเพียงพอ ข.การออกกำลังกาย ค.การรับประทานอาหารที่มีประโยชน์ ง.ทั้งหมดข้างต้น
+2025-08-01 11:50:34,643 - src.api.api - INFO - Extracted choices: {'ก': 'การนอนหลับเพียงพอ', 'ข': 'การออกกำลังกาย', 'ค': 'การรับประทานอาหารที่มีประโยชน์', 'ง': 'ทั้งหมดข้างต้น'}
+2025-08-01 11:50:34,643 - src.api.api - INFO - Processing question with 4 choices
+2025-08-01 11:52:54,306 - src.api.api - INFO - Shutting down Healthcare-AI system...
+2025-08-01 11:53:25,884 - src.api.api - INFO - Initializing Healthcare-AI system...
+2025-08-01 11:53:25,884 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 11:53:30,802 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 11:53:30,803 - database.search_engine - INFO - Initialized search engine
+2025-08-01 11:53:30,803 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 11:53:30,986 - src.api.api - INFO - System initialized with 5 documents
+2025-08-01 11:54:57,781 - src.api.api - INFO - Shutting down Healthcare-AI system...
+2025-08-01 11:55:05,569 - src.api.api - INFO - Initializing Healthcare-AI system...
+2025-08-01 11:55:05,570 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 11:55:13,258 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 11:55:13,258 - database.search_engine - INFO - Initialized search engine
+2025-08-01 11:55:13,259 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 11:55:13,465 - src.api.api - INFO - System initialized with 5 documents
+2025-08-01 11:55:28,623 - __main__ - INFO - Initializing Healthcare-AI system...
+2025-08-01 11:55:28,623 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 11:55:33,311 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 11:55:33,312 - database.search_engine - INFO - Initialized search engine
+2025-08-01 11:55:33,313 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 11:55:33,452 - __main__ - INFO - System initialized with 5 documents
+2025-08-01 11:55:36,774 - __main__ - INFO - Shutting down Healthcare-AI system...
+2025-08-01 11:55:46,516 - __main__ - INFO - Initializing Healthcare-AI system...
+2025-08-01 11:55:46,516 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 11:55:51,276 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 11:55:51,277 - database.search_engine - INFO - Initialized search engine
+2025-08-01 11:55:51,277 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 11:55:51,483 - __main__ - INFO - System initialized with 5 documents
+2025-08-01 11:55:54,374 - __main__ - INFO - Input question: อะไรคือสิ่งสำคัญสำหรับสุขภาพ? ก.การนอนหลับเพียงพอ ข.การออกกำลังกาย ค.การรับประทานอาหารที่มีประโยชน์ ง.ทั้งหมดข้างต้น
+2025-08-01 11:55:54,374 - __main__ - INFO - Extracted choices: {'ก': 'การนอนหลับเพียงพอ', 'ข': 'การออกกำลังกาย', 'ค': 'การรับประทานอาหารที่มีประโยชน์', 'ง': 'ทั้งหมดข้างต้น'}
+2025-08-01 11:55:54,375 - __main__ - INFO - Processing question with 4 choices
