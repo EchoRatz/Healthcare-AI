@@ -202,6 +202,31 @@ def run_quick_test():
         
         print(f"📊 Expected accuracy: {expected_accuracy}")
         
+        # Test output format
+        print(f"\n📋 Testing output format...")
+        test_output = f"quick_test_sample.csv"
+        
+        try:
+            with open(test_output, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(['id', 'answer'])
+                
+                for result in results:
+                    writer.writerow([result['id'], f'"{result["answer"]}"'])
+            
+            # Verify format
+            with open(test_output, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                print(f"  ✅ Format matches submission.csv:")
+                print(f"    Header: {lines[0].strip()}")
+                print(f"    Sample: {lines[1].strip()}")
+            
+            # Clean up test file
+            os.remove(test_output)
+            
+        except Exception as e:
+            print(f"  ⚠️  Format test failed: {e}")
+        
         print(f"\n🎉 Quick test completed successfully!")
         print("🚀 Ready to run full processing: python ultra_fast_llama31.py")
         

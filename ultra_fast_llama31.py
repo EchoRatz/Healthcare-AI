@@ -8,6 +8,7 @@ by using direct Llama 3.1 calls with document context
 """
 
 import os
+import sys
 import csv
 import json
 import requests
@@ -231,7 +232,7 @@ class UltraFastQA:
             return results
     
     def save_submission(self, results: List[Dict], output_file: str):
-        """Save in required format"""
+        """Save in exact submission.csv format"""
         try:
             with open(output_file, 'w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
@@ -239,9 +240,20 @@ class UltraFastQA:
                 
                 for result in results:
                     answer_str = ','.join(result['predicted_answers'])
+                    # Match exact format: id,"answer" or id,"ข,ง" 
                     writer.writerow([result['id'], f'"{answer_str}"'])
             
             print(f"✅ Saved: {output_file}")
+            
+            # Verify format matches submission.csv
+            print("📋 Format verification:")
+            with open(output_file, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                print(f"  Header: {lines[0].strip()}")
+                if len(lines) > 1:
+                    print(f"  Sample: {lines[1].strip()}")
+                    print(f"  Sample: {lines[2].strip()}")
+                print(f"  Total rows: {len(lines)-1} (plus header)")
             
         except Exception as e:
             print(f"❌ Save error: {e}")
@@ -336,6 +348,19 @@ def main():
         
         print(f"\n🎯 Final submission: ultra_fast_submission.csv")
         print("⚡ 10-minute solution achieved!")
+        
+        # Validate format matches submission.csv
+        print(f"\n📋 Validating format against reference...")
+        try:
+            import subprocess
+            result = subprocess.run([sys.executable, 'validate_format.py', 'ultra_fast_submission.csv'], 
+                                  capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                print("✅ Format validation passed!")
+            else:
+                print("⚠️  Format validation issues - check manually")
+        except:
+            print("💡 Run: python validate_format.py ultra_fast_submission.csv")
         
     else:
         print("❌ No results generated")
