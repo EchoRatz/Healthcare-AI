@@ -2,6 +2,7 @@
 
 import json
 import requests
+import time
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
@@ -114,6 +115,10 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
         try:
             results = {}
             
+            # Initialize MCP connection if not already done
+            if not hasattr(self, '_initialized') or not self._initialized:
+                self._initialize_mcp()
+            
             for req in requests:
                 endpoint = req.get('endpoint')
                 params = req.get('params', {})
@@ -128,8 +133,10 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
                     # If no specific tool is requested, try to select based on query context
                     tool_name = self.select_appropriate_tool(str(params.get("query", "")))
                 
-                # MCP server expects this format based on Postman configuration
+                # MCP server expects JSON-RPC format based on working examples
                 payload = {
+                    "jsonrpc": "2.0",
+                    "id": f"req_{int(time.time() * 1000)}",
                     "method": "tools/call",
                     "params": {
                         "name": tool_name,
@@ -139,8 +146,8 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
                 
                 self.logger.debug(f"Sending MCP request to {endpoint}: {params}")
                 
-                # Try different endpoints - based on Postman config, the server is at root
-                endpoints = ["", "/api", "/tools"]
+                # Try different endpoints based on working examples
+                endpoints = ["/message", "/mcp", "/api/mcp", ""]
                 response = None
                 
                 for ep in endpoints:
@@ -167,14 +174,21 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
                 if response.status_code == 200:
                     result = response.json()
                     
+                    # Handle JSON-RPC response format
                     if 'error' in result:
                         self.logger.error(f"MCP error for {endpoint}: {result['error']}")
                         results[endpoint] = {
                             'error': result['error'],
                             'data': None
                         }
+                    elif 'result' in result:
+                        # JSON-RPC success response
+                        results[endpoint] = {
+                            'data': result['result'],
+                            'error': None
+                        }
                     else:
-                        # The MCP server returns data directly, not wrapped in 'result'
+                        # Direct response (non-JSON-RPC)
                         results[endpoint] = {
                             'data': result,
                             'error': None
@@ -192,14 +206,65 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
             self.logger.error(f"Failed to fetch from MCP server: {e}")
             return {'error': str(e)}
     
+    def _initialize_mcp(self):
+        """Initialize MCP connection using JSON-RPC format"""
+        try:
+            self.logger.info("Initializing MCP connection...")
+            
+            init_payload = {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "clientInfo": {
+                        "name": "healthcare-ai-client",
+                        "version": "1.0.0"
+                    },
+                    "capabilities": {
+                        "tools": {"listChanged": True},
+                        "resources": {"listChanged": True, "subscribe": True}
+                    }
+                }
+            }
+            
+            # Try different endpoints for initialization
+            endpoints = ["/message", "/mcp", "/api/mcp", ""]
+            
+            for ep in endpoints:
+                try:
+                    response = self.session.post(
+                        f"{self.server_url}{ep}",
+                        json=init_payload,
+                        timeout=10
+                    )
+                    
+                    if response.status_code == 200:
+                        result = response.json()
+                        if 'result' in result or 'error' not in result:
+                            self.logger.info(f"MCP initialized successfully via {ep}")
+                            self._initialized = True
+                            return
+                            
+                except Exception as e:
+                    self.logger.debug(f"Failed to initialize via {ep}: {e}")
+                    continue
+            
+            self.logger.warning("Failed to initialize MCP connection")
+            self._initialized = False
+            
+        except Exception as e:
+            self.logger.error(f"MCP initialization error: {e}")
+            self._initialized = False
+    
     def is_available(self) -> bool:
         """Check if MCP server is available."""
         try:
-            # Try different possible endpoints - based on Postman config
+            # Try different possible endpoints based on working examples
             endpoints = [
+                "/message",
+                "/mcp", 
+                "/api/mcp",
                 "",
-                "/api",
-                "/tools",
                 "/health",
                 "/status"
             ]
@@ -216,13 +281,11 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
                         self.logger.info(f"MCP server available at {endpoint}")
                         return True
                     
-                    # Try MCP server format
+                    # Try JSON-RPC tools/list format
                     payload = {
-                        "method": "tools/list",
-                        "params": {
-                            "name": "list_all_departments",
-                            "arguments": {}
-                        }
+                        "jsonrpc": "2.0",
+                        "id": 1,
+                        "method": "tools/list"
                     }
                     
                     response = self.session.post(
@@ -259,15 +322,13 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
         """List available MCP resources."""
         try:
             payload = {
-                "method": "tools/list",
-                "params": {
-                    "name": "list_all_departments",
-                    "arguments": {}
-                }
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "tools/list"
             }
             
-            # Try different endpoints
-            endpoints = ["", "/api", "/tools"]
+            # Try different endpoints based on working examples
+            endpoints = ["/message", "/mcp", "/api/mcp", ""]
             response = None
             
             for ep in endpoints:
@@ -285,11 +346,19 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
             
             if response and response.status_code == 200:
                 result = response.json()
+                
+                # Handle JSON-RPC response format
+                if 'result' in result:
+                    result = result['result']
+                
                 # Extract department names from the response
                 if isinstance(result, list):
                     return [dept.get('name', '') for dept in result if dept.get('name')]
                 elif isinstance(result, dict) and 'departments' in result:
                     return [dept.get('name', '') for dept in result['departments'] if dept.get('name')]
+                elif isinstance(result, dict) and 'tools' in result:
+                    # Extract tool names from tools list
+                    return [tool.get('name', '') for tool in result['tools'] if tool.get('name')]
             
             return []
             
