@@ -7,9 +7,12 @@ Simple entry point that coordinates all modules.
 import sys
 from pathlib import Path
 
-# Add src to path
-sys.path.append(str(Path(__file__).parent.parent / "src"))
+# Add both src and project root to path
+project_root = Path(__file__).parent.parent
+sys.path.append(str(project_root / "src"))
+sys.path.append(str(project_root))
 
+# Remove 'src.' prefix from imports since src is in the path
 from database.vector_store import VectorStore
 from database.text_processor import TextProcessor
 from database.search_engine import SearchEngine
