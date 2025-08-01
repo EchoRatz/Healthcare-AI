@@ -107,9 +107,9 @@ class ThaiHealthcareQA:
 
         # List of healthcare document files
         healthcare_files = [
-            "results_doc/direct_extraction_corrected.txt",
-            "results_doc2/direct_extraction_corrected.txt",
-            "results_doc3/direct_extraction_corrected.txt",
+            "data/results_doc/GPTCleaned_1.txt",
+            "data/results_doc/GPTCleaned_2.txt",
+            "data/results_doc/GPTCleaned_3.txt",
         ]
 
         for file_path in healthcare_files:
