@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "healthcare-ai-clean"
+version = "1.0.0"
+description = "Clean Architecture Thai Healthcare Q&A System"
+authors = [{name = "Your Name", email = "your.email@example.com"}]
+dependencies = [
+    "langchain-ollama>=0.1.0",
+    "langchain-chroma>=0.1.0",
+    "langchain-core>=0.2.0",
+    "redis>=5.0.0",
+    "pandas>=2.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+healthcare-batch = "scripts.batch_processor:main"
+healthcare-quick = "scripts.quick_test:main"
+healthcare-interactive = "scripts.interactive_qa:main"

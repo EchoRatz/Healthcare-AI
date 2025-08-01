@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  healthcare-ai:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../data:/app/data
+    environment:
+      - REDIS_HOST=redis
+      - OLLAMA_HOST=ollama
+    depends_on:
+      - redis
+      - ollama
+    networks:
+      - healthcare-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - healthcare-network
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - healthcare-network
+
+volumes:
+  redis_data:
+  ollama_data:
+
+networks:
+  healthcare-network:
+    driver: bridge
