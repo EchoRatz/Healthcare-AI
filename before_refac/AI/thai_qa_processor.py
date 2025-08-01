@@ -189,17 +189,22 @@ class ThaiHealthcareQA:
         return {"facts": [], "last_updated": None, "version": "1.0"}
 
     def save_knowledge_cache(self):
+        """Save knowledge cache to file or Redis"""
         try:
-            facts = self.redis_client.hget(self.cache_key, "facts")
-            if facts:
-                facts = json.loads(facts)
+            if self.redis_client:
+                # Use Redis if available
+                facts = self.knowledge_cache.get("facts", [])
+                self.redis_client.hset(
+                    self.cache_key, "last_updated", datetime.now().isoformat()
+                )
+                self.redis_client.hset(self.cache_key, "facts", json.dumps(facts, ensure_ascii=False))
+                print(f"💾 Saved {len(facts)} facts to Redis cache")
             else:
-                facts = []
-
-            self.redis_client.hset(self.cache_key, "last_updated", datetime.now().isoformat())
-            self.redis_client.hset(self.cache_key, "facts", json.dumps(facts))
-            
-            print(f"💾 Saved {len(facts)} facts to Redis cache")
+                # Fall back to JSON file
+                self.knowledge_cache["last_updated"] = datetime.now().isoformat()
+                with open(self.knowledge_cache_file, "w", encoding="utf-8") as f:
+                    json.dump(self.knowledge_cache, f, ensure_ascii=False, indent=2)
+                print(f"💾 Saved cache with {len(self.knowledge_cache['facts'])} facts")
         except Exception as e:
             print(f"⚠️  Error saving cache: {e}")
 
@@ -246,19 +251,8 @@ class ThaiHealthcareQA:
         except Exception as e:
             print(f"❌ Error extracting information: {e}")
             return None
-        
-    def add_fact_to_cache(self, fact):
-        try:
-            facts = self.redis_client.hget(self.cache_key, "facts")
-            if facts:
-                facts = json.loads(facts)
-            else:
-                facts = []
-            facts.append(fact)
-            self.redis_client.hset(self.cache_key, "facts", json.dumps(facts))
-            print(f"✅ Cached fact: {fact['type']} - {fact['key']}")
-        except Exception as e:
-            print(f"⚠️  Error adding fact to cache: {e}")
+
+
 
     def add_to_cache(self, extracted_info: Dict[str, Any]):
         """Add extracted information to knowledge cache"""
@@ -284,14 +278,15 @@ class ThaiHealthcareQA:
                     print(f"✅ Cached: {fact['type']} - {fact['key']}")
 
     def get_cached_facts(self):
-        facts = self.redis_client.hget(self.cache_key, "facts")
-        if facts:
-            facts = json.loads(facts)
-        return []
-    
-    def clear_cache(self):
-        self.redis_client.delete(self.cache_key)
-        print("Cleared cache")
+        """Get all cached facts"""
+        if self.redis_client:
+            try:
+                facts = self.redis_client.hget(self.cache_key, "facts")
+                if facts:
+                    return json.loads(facts)
+            except Exception:
+                pass
+        return self.knowledge_cache.get("facts", [])
 
     def search_cached_knowledge(
         self, query: str, top_k: int = 3
@@ -328,58 +323,58 @@ class ThaiHealthcareQA:
     def extract_choice_only(self, ai_response: str) -> str:
         """Extract only the choice letters from AI response"""
         import re
-        
+
         # Clean the response
         response = ai_response.strip()
-        
+
         # Check for common "no answer" phrases FIRST (before extracting letters)
         no_answer_phrases = [
-            'ไม่มีคำตอบที่ถูกต้อง',
-            'ไม่มีข้อใดถูกต้อง', 
-            'ไม่มีตัวเลือกที่ถูกต้อง',
-            'ไม่พบข้อมูล',
-            'ไม่มีข้อมูล',
-            'ข้อมูลไม่เพียงพอ',
-            'ไม่สามารถ',
-            'ขออภัย'
+            "ไม่มีคำตอบที่ถูกต้อง",
+            "ไม่มีข้อใดถูกต้อง",
+            "ไม่มีตัวเลือกที่ถูกต้อง",
+            "ไม่พบข้อมูล",
+            "ไม่มีข้อมูล",
+            "ข้อมูลไม่เพียงพอ",
+            "ไม่สามารถ",
+            "ขออภัย",
         ]
-        
+
         response_lower = response.lower()
         for phrase in no_answer_phrases:
             if phrase.lower() in response_lower:
                 return "ไม่มีคำตอบที่ถูกต้อง"
-        
+
         # Look for Thai choice letters at the end of response or in quotes
         choice_patterns = [
-            r'ตอบ[:\s]*([ก-ง](?:\s*,\s*[ก-ง])*)',  # ตอบ: ก, ข
-            r'คำตอบ[:\s]*([ก-ง](?:\s*,\s*[ก-ง])*)',  # คำตอบ: ก
+            r"ตอบ[:\s]*([ก-ง](?:\s*,\s*[ก-ง])*)",  # ตอบ: ก, ข
+            r"คำตอบ[:\s]*([ก-ง](?:\s*,\s*[ก-ง])*)",  # คำตอบ: ก
             r'"([ก-ง](?:\s*,\s*[ก-ง])*)"',  # "ก, ข"
-            r'([ก-ง](?:\s*,\s*[ก-ง])*)\s*$',  # ก, ข at end
-            r'ให้ตอบ[:\s]*([ก-ง](?:\s*,\s*[ก-ง])*)',  # ให้ตอบ: ก
+            r"([ก-ง](?:\s*,\s*[ก-ง])*)\s*$",  # ก, ข at end
+            r"ให้ตอบ[:\s]*([ก-ง](?:\s*,\s*[ก-ง])*)",  # ให้ตอบ: ก
         ]
-        
+
         # Try each pattern
         for pattern in choice_patterns:
             matches = re.findall(pattern, response)
             if matches:
                 choice = matches[-1].strip()  # Get last match
                 # Clean up spacing around commas
-                choice = re.sub(r'\s*,\s*', ', ', choice)
+                choice = re.sub(r"\s*,\s*", ", ", choice)
                 return choice
-        
+
         # Look for individual Thai letters scattered in text (only if no "no answer" phrases)
-        thai_letters = re.findall(r'[ก-ง]', response)
+        thai_letters = re.findall(r"[ก-ง]", response)
         if thai_letters:
             # Remove duplicates while preserving order
             unique_letters = []
             for letter in thai_letters:
                 if letter not in unique_letters:
                     unique_letters.append(letter)
-            
+
             # If we found reasonable number of letters (1-4), return them
             if 1 <= len(unique_letters) <= 4:
-                return ', '.join(unique_letters)
-        
+                return ", ".join(unique_letters)
+
         # If all else fails, return the original response (but truncated)
         return response[:50] + "..." if len(response) > 50 else response
 
@@ -517,15 +512,17 @@ class ThaiHealthcareQA:
             chain = prompt | self.model
 
             # Generate answer
-            result = chain.invoke({
-                "context": full_context,
-                "question": question,
-                "choices": formatted_choices
-            })
-            
+            result = chain.invoke(
+                {
+                    "context": full_context,
+                    "question": question,
+                    "choices": formatted_choices,
+                }
+            )
+
             # Extract only the choice letters from the response
             clean_answer = self.extract_choice_only(result)
-            
+
             # Extract and cache information from this Q&A pair (use original result for better context)
             if enable_caching and self.cache_enabled:
                 try:
@@ -537,9 +534,9 @@ class ThaiHealthcareQA:
                             self.save_knowledge_cache()
                 except Exception as e:
                     print(f"⚠️  Cache extraction failed: {e}")
-            
+
             return clean_answer
-            
+
         except Exception as e:
             return f"เกิดข้อผิดพลาด: {str(e)}"
 
@@ -597,14 +594,11 @@ class ThaiHealthcareQA:
             chain = prompt | self.model
 
             # Generate answer
-            result = chain.invoke({
-                "context": full_context,
-                "question": question
-            })
-            
+            result = chain.invoke({"context": full_context, "question": question})
+
             # For open-ended questions, try to extract clean answer too
             clean_answer = self.extract_choice_only(result)
-            
+
             # Extract and cache information from this Q&A pair (if meaningful answer was generated)
             if enable_caching and self.cache_enabled and "ไม่พบข้อมูล" not in result:
                 try:
@@ -616,9 +610,9 @@ class ThaiHealthcareQA:
                             self.save_knowledge_cache()
                 except Exception as e:
                     print(f"⚠️  Cache extraction failed: {e}")
-            
+
             return clean_answer
-            
+
         except Exception as e:
             return f"เกิดข้อผิดพลาด: {str(e)}"
 
@@ -665,9 +659,15 @@ class ThaiHealthcareQA:
             print("=" * 60)
 
     def process_csv_questions(
-        self, csv_file_path: str, output_file_path: str = None
+        self, csv_file_path: str, output_file_path: str = None, clean_format: bool = False
     ) -> None:
-        """Process all questions from CSV file and save answers"""
+        """Process all questions from CSV file and save answers
+        
+        Args:
+            csv_file_path: Path to input CSV file  
+            output_file_path: Path to output CSV file (optional)
+            clean_format: If True, output only id,answer columns (default: id,question,answer)
+        """
         import csv
         import os
         from datetime import datetime
@@ -679,8 +679,6 @@ class ThaiHealthcareQA:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_file_path = f"thai_qa_answers_{timestamp}.csv"
 
-        results = []
-
         try:
             # Read CSV file
             with open(csv_file_path, "r", encoding="utf-8") as file:
@@ -688,63 +686,81 @@ class ThaiHealthcareQA:
                 questions = list(reader)
 
             total_questions = len(questions)
+            total_batches = (total_questions + batch_size - 1) // batch_size
+
             print(f"📝 พบคำถามทั้งหมด: {total_questions} ข้อ")
             print("=" * 60)
 
-            # Process each question
-            for i, row in enumerate(questions, 1):
-                question_id = row["id"]
-                question_text = row["question"]
+            all_results = []
 
-                print(f"⏳ กำลังประมวลผลคำถาม {i}/{total_questions} (ID: {question_id})")
+            for batch_num in range(total_batches):
+                start_idx = batch_num * batch_size
+                end_idx = min(start_idx + batch_size, total_questions)
+                batch_questions = questions[start_idx:end_idx]
 
-                try:
-                    # Get answer from AI
-                    answer = self.answer_question(question_text)
+                print(
+                    f"🔄 กำลังประมวลผล Batch {batch_num + 1}/{total_batches} (คำถาม {start_idx + 1}-{end_idx})"
+                )
 
-                    # Clean up answer (remove extra whitespace, newlines)
-                    clean_answer = " ".join(answer.split())
+                batch_results = []
 
-                    results.append(
-                        {
-                            "id": question_id,
-                            "question": question_text,
-                            "answer": clean_answer,
-                        }
+                # Process each question
+                for i, row in enumerate(questions, 1):
+                    question_id = row["id"]
+                    question_text = row["question"]
+
+                    print(
+                        f"⏳ กำลังประมวลผลคำถาม {i}/{total_questions} (ID: {question_id})"
                     )
 
-                    print(f"✅ คำตอบ: {clean_answer}")
+                    try:
+                        # Get answer from AI
+                        answer = self.answer_question(question_text)
 
-                except Exception as e:
-                    error_msg = f"ข้อผิดพลาด: {str(e)}"
-                    results.append(
-                        {
-                            "id": question_id,
-                            "question": question_text,
-                            "answer": error_msg,
-                        }
-                    )
-                    print(f"❌ {error_msg}")
+                        # Clean up answer (remove extra whitespace, newlines)
+                        clean_answer = " ".join(answer.split())
+                        if clean_format:
+                            batch_results.append(
+                                {
+                                    "id": question_id,
+                                    "answer": clean_answer,
+                                }
+                            )
+                        else:
+                            batch_results.append(
+                                {
+                                    "id": question_id,
+                                    "question": question_text,
+                                    "answer": clean_answer,
+                                }
+                            )
+                        print(f"✅ คำตอบ: {clean_answer}")
 
-                print("-" * 40)
+                    except Exception as e:
+                        error_msg = f"ข้อผิดพลาด: {str(e)}"
+                        print(f"❌ {error_msg}")
+
+            all_results.extend(batch_results)
 
             # Save results to CSV
             with open(output_file_path, "w", encoding="utf-8", newline="") as file:
-                fieldnames = ["id", "question", "answer"]
+                if clean_format:
+                    # Clean format: only id and answer columns
+                    fieldnames = ["id", "answer"]
+                    clean_results = [{"id": r["id"], "answer": r["answer"]} for r in results]
+                else:
+                    # Standard format: id, question, and answer columns
+                    fieldnames = ["id", "question", "answer"]
+                    clean_results = results
+                
                 writer = csv.DictWriter(file, fieldnames=fieldnames)
                 writer.writeheader()
-                writer.writerows(results)
+                writer.writerows(clean_results)
 
             print("=" * 60)
             print(f"🎉 เสร็จสิ้น! บันทึกผลลัพธ์ที่: {output_file_path}")
             print(f"📊 สถิติ:")
             print(f"   - คำถามทั้งหมด: {total_questions}")
-            print(
-                f"   - ประมวลผลสำเร็จ: {len([r for r in results if not r['answer'].startswith('ข้อผิดพลาด')])}"
-            )
-            print(
-                f"   - เกิดข้อผิดพลาด: {len([r for r in results if r['answer'].startswith('ข้อผิดพลาด')])}"
-            )
 
             # Save final cache
             if self.cache_enabled:
@@ -857,38 +873,53 @@ class ThaiHealthcareQA:
             print(f"❌ เกิดข้อผิดพลาดในการประมวลผล: {str(e)}")
 
     def show_cache_stats(self):
-        facts = self.redis_client.hgetall(self.cache_key, "facts")
-        if facts:
-            facts = json.loads(facts)
-        else:
-            facts = []
+        """Display cache statistics"""
+        try:
+            if self.redis_client:
+                # Use Redis if available
+                all_fields = self.redis_client.hgetall(self.cache_key)
+                facts = json.loads(all_fields.get("facts", "[]")) if all_fields else []
+                last_updated = all_fields.get("last_updated")
+            else:
+                # Use JSON file cache
+                facts = self.knowledge_cache.get("facts", [])
+                last_updated = self.knowledge_cache.get("last_updated")
 
-        print(f"📊 Cache Statistics:")
-        print(f"   - Total facts: {len(facts)}")
+            print(f"📊 Cache Statistics:")
+            print(f"   - Total facts: {len(facts)}")
 
-        if facts:
-            types_count = {}
-            for fact in facts:
-                fact_type = fact.get("type", "Unknown")
-                types_count[fact_type] = types_count.get(fact_type, 0) + 1
+            if facts:
+                types_count = {}
+                for fact in facts:
+                    fact_type = fact.get("type", "Unknown")
+                    types_count[fact_type] = types_count.get(fact_type, 0) + 1
 
-            print("   - Facts by type:")
-            for fact_type, count in sorted(types_count.items()):
-                print(f"     - {fact_type}: {count}")
+                print("   - Facts by type:")
+                for fact_type, count in sorted(types_count.items()):
+                    print(f"     - {fact_type}: {count}")
 
-            last_updated = self.redis_client.hget(self.cache_key, "last_updated")
-            if last_updated:
-                print(f"   - Last updated: {last_updated}")
-
-    
+                if last_updated:
+                    print(f"   - Last updated: {last_updated}")
+        except Exception as e:
+            print(f"⚠️  Error showing cache stats: {e}")
 
     def clear_cache(self):
         """Clear the knowledge cache"""
-        self.knowledge_cache = {"facts": [], "last_updated": None, "version": "1.0"}
         try:
+            if self.redis_client:
+                # Clear Redis cache
+                self.redis_client.delete(self.cache_key)
+                print("🗑️  Redis cache cleared!")
+            
+            # Clear local cache
+            self.knowledge_cache = {"facts": [], "last_updated": None, "version": "1.0"}
+            
+            # Remove JSON file if exists
             if os.path.exists(self.knowledge_cache_file):
                 os.remove(self.knowledge_cache_file)
-            print("🗑️  Knowledge cache cleared")
+                print("🗑️  JSON cache file cleared!")
+            
+            print("🗑️  All caches cleared!")
         except Exception as e:
             print(f"❌ Error clearing cache: {e}")
 
