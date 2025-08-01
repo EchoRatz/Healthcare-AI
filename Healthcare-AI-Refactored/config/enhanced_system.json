@@ -16,7 +16,7 @@
   "connectors": {
     "mcp": {
       "enabled": true,
-      "server_url": "https://mcp-hackathon.cmkl.ai/mcp",
+      "server_url": "https://mcp-hackathon.cmkl.ai",
       "auth_token": null,
       "timeout": 30
     },

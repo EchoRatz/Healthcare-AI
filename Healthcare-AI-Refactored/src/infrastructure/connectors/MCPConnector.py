@@ -40,6 +40,7 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
             'search': 'search_patients',
             'create': 'create_patient',
             'emergency': 'emergency_patient_lookup',
+            'emergency patient': 'emergency_patient_lookup',
             'medical history': 'get_medical_history',
             'vital signs': 'add_vital_signs',
             'medication': 'add_medication',
@@ -58,6 +59,7 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
             'doctor schedule': 'get_doctor_schedule',
             'doctor availability': 'check_doctor_availability',
             'available doctor': 'find_available_doctors',
+            'get doctor schedule': 'get_doctor_schedule',
             
             # Department-related tools
             'department': 'list_all_departments',
@@ -89,7 +91,12 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
             
             # Lab-related tools
             'lab result': 'get_lab_results',
-            'add lab': 'add_lab_result'
+            'add lab': 'add_lab_result',
+            
+            # Allergy-related tools
+            'food allergy': 'check_food_allergies',
+            'check food allergy': 'check_food_allergies',
+            'check food allergies': 'check_food_allergies'
         }
         
         # Check for exact matches first
