@@ -1,5 +1,5 @@
 # Thai Healthcare Knowledge Cache Export
-# Generated: 2025-08-01T12:45:22.409108
+# Generated: 2025-08-01T20:36:22.039633
 # Total facts: 728
 
 ## กลุ่มเป้าหมาย

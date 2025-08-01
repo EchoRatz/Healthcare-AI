@@ -4,6 +4,10 @@ Processes Thai multiple-choice questions about Thailand's health insurance syste
 using information from direct_extraction_corrected.txt files.
 """
 
+import threading
+import time  # เพิ่มบรรทัดนี้
+import concurrent.futures  # เพิ่มบรรทัดนี้
+from queue import Queue  # เพิ่มบรรทัดนี้
 from langchain_ollama.llms import OllamaLLM
 from langchain_ollama import OllamaEmbeddings
 from langchain_chroma import Chroma
@@ -30,6 +34,15 @@ class ThaiHealthcareQA:
         self.knowledge_cache_file = "./knowledge_cache.json"
         self.knowledge_cache = self.load_knowledge_cache()
         self.cache_enabled = True
+
+        # Thread safety
+        self.cache_lock = threading.Lock()
+        self.stats_lock = threading.Lock()
+        self.thread_stats = {
+            'processed': 0,
+            'successful': 0,
+            'errors': 0
+        }
         
         # Thai Q&A prompt template
         self.prompt_template = """
@@ -788,6 +801,221 @@ class ThaiHealthcareQA:
             
         except Exception as e:
             print(f"❌ Error exporting cache: {e}")
+
+    def _process_single_question_thread_safe(self, question_data):
+        """Thread-safe version of processing a single question"""
+        question_id = question_data['id']
+        question_text = question_data['question']
+        
+        try:
+            # Get answer from AI
+            answer = self.answer_question(question_text, enable_caching=True)
+            
+            # Clean up answer
+            clean_answer = ' '.join(answer.split())
+            
+            # Update thread-safe stats
+            with self.stats_lock:
+                self.thread_stats['processed'] += 1
+                self.thread_stats['successful'] += 1
+            
+            return {
+                'id': question_id,
+                'question': question_text,
+                'answer': clean_answer,
+                'status': 'success'
+            }
+            
+        except Exception as e:
+            error_msg = f"ข้อผิดพลาด: {str(e)}"
+            
+            # Update thread-safe stats
+            with self.stats_lock:
+                self.thread_stats['processed'] += 1
+                self.thread_stats['errors'] += 1
+            
+            return {
+                'id': question_id,
+                'question': question_text,
+                'answer': error_msg,
+                'status': 'error'
+            }
+        
+    def process_csv_multithreaded(self, csv_file_path: str, output_file_path: str = None, 
+                                 max_threads: int = 120, clean_format: bool = False) -> None:
+        """Process CSV questions using multiple threads (up to 120 threads)"""
+        import csv
+        import os
+        from datetime import datetime
+        
+        print(f"🚀 เริ่มประมวลผลแบบ Multi-threaded: {csv_file_path}")
+        print(f"🔧 จำนวน Threads: {max_threads}")
+        
+        # Default output file if not provided
+        if output_file_path is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_file_path = f"thai_qa_answers_threaded_{timestamp}.csv"
+        
+        # Reset thread stats
+        with self.stats_lock:
+            self.thread_stats = {'processed': 0, 'successful': 0, 'errors': 0}
+        
+        try:
+            # Read CSV file
+            with open(csv_file_path, 'r', encoding='utf-8') as file:
+                reader = csv.DictReader(file)
+                questions = list(reader)
+            
+            total_questions = len(questions)
+            print(f"📝 คำถามทั้งหมด: {total_questions} ข้อ")
+            print("=" * 60)
+            
+            # Start processing with thread pool
+            start_time = time.time()  # ใช้ time จาก import
+            results = [None] * total_questions
+            
+            # Process questions using ThreadPoolExecutor
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
+                # Submit all tasks
+                future_to_index = {}
+                for i, question_data in enumerate(questions):
+                    future = executor.submit(self._process_single_question_thread_safe, question_data)
+                    future_to_index[future] = i
+                
+                # Progress tracking
+                completed = 0
+                for future in concurrent.futures.as_completed(future_to_index):
+                    index = future_to_index[future]
+                    completed += 1
+                    
+                    try:
+                        result = future.result()
+                        results[index] = result
+                        
+                        # Show progress
+                        if completed % 50 == 0 or completed == total_questions:
+                            progress = (completed / total_questions) * 100
+                            print(f"⏳ ความคืบหน้า: {completed}/{total_questions} ({progress:.1f}%)")
+                        
+                    except Exception as e:
+                        # Fallback error handling
+                        question_data = questions[index]
+                        results[index] = {
+                            'id': question_data['id'],
+                            'question': question_data['question'],
+                            'answer': f"Thread error: {str(e)}",
+                            'status': 'thread_error'
+                        }
+            
+            end_time = time.time()
+            processing_time = end_time - start_time
+            
+            print(f"\n⏱️  เวลาประมวลผลทั้งหมด: {processing_time:.2f} วินาที")
+            print(f"⚡ ความเร็วเฉลี่ย: {total_questions/processing_time:.2f} คำถาม/วินาที")
+            
+            # Save results to CSV
+            with open(output_file_path, 'w', encoding='utf-8', newline='') as file:
+                if clean_format:
+                    fieldnames = ['id', 'answer']
+                    clean_results = [{'id': r['id'], 'answer': r['answer']} for r in results]
+                else:
+                    fieldnames = ['id', 'question', 'answer']
+                    clean_results = results
+                
+                writer = csv.DictWriter(file, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(clean_results)
+            
+            # Final statistics
+            successful_count = sum(1 for r in results if r and r.get('status') == 'success')
+            error_count = sum(1 for r in results if r and r.get('status') in ['error', 'thread_error'])
+            
+            print("=" * 60)
+            print(f"🎉 เสร็จสิ้น! บันทึกผลลัพธ์ที่: {output_file_path}")
+            print(f"📊 สถิติการประมวลผล:")
+            print(f"   - คำถามทั้งหมด: {total_questions}")
+            print(f"   - ประมวลผลสำเร็จ: {successful_count}")
+            print(f"   - เกิดข้อผิดพลาด: {error_count}")
+            print(f"   - อัตราความสำเร็จ: {(successful_count/total_questions)*100:.1f}%")
+            print(f"   - เวลาเฉลี่ย/คำถาม: {processing_time/total_questions:.3f} วินาที")
+            print(f"   - Threads ที่ใช้: {max_threads}")
+            
+        except Exception as e:
+            print(f"❌ เกิดข้อผิดพลาดในการประมวลผล: {str(e)}")
+            import traceback
+            traceback.print_exc()
+
+    def add_to_cache(self, extracted_info: Dict[str, Any]):
+        """Thread-safe version of add_to_cache"""
+        if not extracted_info or not extracted_info.get("facts"):
+            return
+        
+        relevance_score = extracted_info.get("relevance_score", 0)
+        
+        # Only cache information with decent relevance score
+        if relevance_score >= 5:
+            with self.cache_lock:  # Thread-safe cache access
+                for fact in extracted_info["facts"]:
+                    # Create a hash to avoid duplicates
+                    fact_hash = hashlib.md5(
+                        f"{fact['type']}:{fact['key']}:{fact['value']}".encode()
+                    ).hexdigest()[:8]
+                    
+                    fact["id"] = fact_hash
+                    
+                    # Check if already exists
+                    existing_ids = {f.get("id") for f in self.knowledge_cache["facts"]}
+                    if fact_hash not in existing_ids:
+                        self.knowledge_cache["facts"].append(fact)
+                        print(f"✅ Cached: {fact['type']} - {fact['key']}")
+
+    def process_csv_adaptive_threads(self, csv_file_path: str, output_file_path: str = None, 
+                                   clean_format: bool = False) -> None:
+        """Adaptive threading based on system resources and question count"""
+        import csv
+        import psutil
+        
+        try:
+            # Read questions to determine optimal thread count
+            with open(csv_file_path, 'r', encoding='utf-8') as file:
+                reader = csv.DictReader(file)
+                questions = list(reader)
+            
+            total_questions = len(questions)
+            cpu_count = psutil.cpu_count()
+            available_memory_gb = psutil.virtual_memory().available / (1024**3)
+            
+            # Adaptive thread calculation
+            if total_questions <= 50:
+                optimal_threads = min(20, cpu_count * 2)
+            elif total_questions <= 200:
+                optimal_threads = min(60, cpu_count * 4)
+            else:
+                optimal_threads = min(120, cpu_count * 6)
+            
+            # Adjust based on available memory (rough estimate: 100MB per thread)
+            memory_limit_threads = int(available_memory_gb * 10)  # 100MB per thread
+            optimal_threads = min(optimal_threads, memory_limit_threads)
+            
+            print(f"🤖 การปรับแต่งอัตโนมัติ:")
+            print(f"   - CPU cores: {cpu_count}")
+            print(f"   - Available memory: {available_memory_gb:.1f} GB")
+            print(f"   - Questions: {total_questions}")
+            print(f"   - Optimal threads: {optimal_threads}")
+            
+            # Use the multithreaded processor
+            self.process_csv_multithreaded(
+                csv_file_path=csv_file_path,
+                output_file_path=output_file_path,
+                max_threads=optimal_threads,
+                clean_format=clean_format
+            )
+            
+        except Exception as e:
+            print(f"❌ Error in adaptive threading: {e}")
+            # Fallback to standard processing
+            print("🔄 Falling back to standard processing...")
+            self.process_csv_questions(csv_file_path, output_file_path, clean_format)
 
 
 def main():
