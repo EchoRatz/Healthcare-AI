@@ -51,8 +51,7 @@ def load_sample_data(search_engine: SearchEngine) -> int:
                 "source": "sample_data.txt",
                 "index": i,
                 "length": len(text),
-                "loaded_at": str(Path(data_file).stat().st_mtime),
-                "text": text
+                "loaded_at": str(Path(data_file).stat().st_mtime)
             })
         
         count = search_engine.add_texts_from_list(texts, metadata_list)

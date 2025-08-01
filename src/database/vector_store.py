@@ -46,11 +46,15 @@ class VectorStore:
             
             # Store texts and metadata
             if texts:
+                if len(texts) != len(vectors):
+                    raise ValueError(f"Length of texts ({len(texts)}) does not match number of vectors ({len(vectors)})")
                 self.texts.extend(texts)
             else:
                 self.texts.extend([""] * len(vectors))
                 
             if metadata:
+                if len(metadata) != len(vectors):
+                    raise ValueError(f"Metadata length mismatch: expected {len(vectors)}, got {len(metadata)}")
                 self.metadata.extend(metadata)
             else:
                 self.metadata.extend([{}] * len(vectors))

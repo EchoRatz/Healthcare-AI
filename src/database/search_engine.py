@@ -58,8 +58,8 @@ class SearchEngine:
         if metadata_list is None:
             metadata_list = [{}] * len(texts)
         elif len(metadata_list) != len(texts):
-            # Pad with empty dicts if metadata_list is shorter
-            metadata_list.extend([{}] * (len(texts) - len(metadata_list)))
+            logger.warning("Length of metadata_list does not match length of texts")
+            raise ValueError("metadata_list must have the same length as texts")
         
         for i, text in enumerate(texts):
             if self.add_text(text, metadata_list[i]):
