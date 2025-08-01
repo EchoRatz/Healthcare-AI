@@ -328,7 +328,7 @@ class FreeEnhancedThaiQA:
 
 คำตอบ:"""
 
-                            response = requests.post(
+            response = requests.post(
                 'http://localhost:11434/api/generate',
                 json={
                     'model': self.local_llm_model,
