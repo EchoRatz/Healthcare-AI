@@ -2,16 +2,15 @@ from flask import Flask, request, jsonify
 import os
 from improved_healthcare_qa_system import ImprovedHealthcareQA
 
-app = Flask(__name__)
-
-# Initialize UltraFastQA
+# Initialize ImprovedHealthcareQA
 qa_system = ImprovedHealthcareQA()
 
 # Check Llama 3.1 availability and load documents
 if not qa_system.check_llama31():
     raise RuntimeError("Llama 3.1 is not available. Ensure 'ollama serve' is running.")
-if not qa_system.load_documents_once():
-    raise RuntimeError("Failed to load knowledge documents.")
+qa_system.load_knowledge_base()  # Correct method to load the knowledge base
+
+app = Flask(__name__)
 
 
 @app.route("/eval", methods=["POST"])
