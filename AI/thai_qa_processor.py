@@ -189,19 +189,22 @@ class ThaiHealthcareQA:
         return {"facts": [], "last_updated": None, "version": "1.0"}
 
     def save_knowledge_cache(self):
+        """Save knowledge cache to file or Redis"""
         try:
-            facts = self.redis_client.hget(self.cache_key, "facts")
-            if facts:
-                facts = json.loads(facts)
+            if self.redis_client:
+                # Use Redis if available
+                facts = self.knowledge_cache.get("facts", [])
+                self.redis_client.hset(
+                    self.cache_key, "last_updated", datetime.now().isoformat()
+                )
+                self.redis_client.hset(self.cache_key, "facts", json.dumps(facts, ensure_ascii=False))
+                print(f"💾 Saved {len(facts)} facts to Redis cache")
             else:
-                facts = []
-
-            self.redis_client.hset(
-                self.cache_key, "last_updated", datetime.now().isoformat()
-            )
-            self.redis_client.hset(self.cache_key, "facts", json.dumps(facts))
-
-            print(f"💾 Saved {len(facts)} facts to Redis cache")
+                # Fall back to JSON file
+                self.knowledge_cache["last_updated"] = datetime.now().isoformat()
+                with open(self.knowledge_cache_file, "w", encoding="utf-8") as f:
+                    json.dump(self.knowledge_cache, f, ensure_ascii=False, indent=2)
+                print(f"💾 Saved cache with {len(self.knowledge_cache['facts'])} facts")
         except Exception as e:
             print(f"⚠️  Error saving cache: {e}")
 
@@ -249,18 +252,7 @@ class ThaiHealthcareQA:
             print(f"❌ Error extracting information: {e}")
             return None
 
-    def add_fact_to_cache(self, fact):
-        try:
-            facts = self.redis_client.hget(self.cache_key, "facts")
-            if facts:
-                facts = json.loads(facts)
-            else:
-                facts = []
-            facts.append(fact)
-            self.redis_client.hset(self.cache_key, "facts", json.dumps(facts))
-            print(f"✅ Cached fact: {fact['type']} - {fact['key']}")
-        except Exception as e:
-            print(f"⚠️  Error adding fact to cache: {e}")
+
 
     def add_to_cache(self, extracted_info: Dict[str, Any]):
         """Add extracted information to knowledge cache"""
@@ -286,14 +278,15 @@ class ThaiHealthcareQA:
                     print(f"✅ Cached: {fact['type']} - {fact['key']}")
 
     def get_cached_facts(self):
-        facts = self.redis_client.hget(self.cache_key, "facts")
-        if facts:
-            facts = json.loads(facts)
-        return []
-
-    def clear_cache(self):
-        self.redis_client.delete(self.cache_key)
-        print("Cleared cache")
+        """Get all cached facts"""
+        if self.redis_client:
+            try:
+                facts = self.redis_client.hget(self.cache_key, "facts")
+                if facts:
+                    return json.loads(facts)
+            except Exception:
+                pass
+        return self.knowledge_cache.get("facts", [])
 
     def search_cached_knowledge(
         self, query: str, top_k: int = 3
@@ -667,9 +660,15 @@ class ThaiHealthcareQA:
             print("=" * 60)
 
     def process_csv_questions(
-        self, csv_file_path: str, output_file_path: str = None
+        self, csv_file_path: str, output_file_path: str = None, clean_format: bool = False
     ) -> None:
-        """Process all questions from CSV file and save answers"""
+        """Process all questions from CSV file and save answers
+        
+        Args:
+            csv_file_path: Path to input CSV file  
+            output_file_path: Path to output CSV file (optional)
+            clean_format: If True, output only id,answer columns (default: id,question,answer)
+        """
         import csv
         import os
         from datetime import datetime
@@ -732,10 +731,18 @@ class ThaiHealthcareQA:
 
             # Save results to CSV
             with open(output_file_path, "w", encoding="utf-8", newline="") as file:
-                fieldnames = ["id", "question", "answer"]
+                if clean_format:
+                    # Clean format: only id and answer columns
+                    fieldnames = ["id", "answer"]
+                    clean_results = [{"id": r["id"], "answer": r["answer"]} for r in results]
+                else:
+                    # Standard format: id, question, and answer columns
+                    fieldnames = ["id", "question", "answer"]
+                    clean_results = results
+                
                 writer = csv.DictWriter(file, fieldnames=fieldnames)
                 writer.writeheader()
-                writer.writerows(results)
+                writer.writerows(clean_results)
 
             print("=" * 60)
             print(f"🎉 เสร็จสิ้น! บันทึกผลลัพธ์ที่: {output_file_path}")
@@ -859,12 +866,17 @@ class ThaiHealthcareQA:
             print(f"❌ เกิดข้อผิดพลาดในการประมวลผล: {str(e)}")
 
     def show_cache_stats(self):
+        """Display cache statistics"""
         try:
-            # Retrieve all fields and values from the hash
-            all_fields = self.redis_client.hgetall(self.cache_key)
-
-            # Extract facts from the hash
-            facts = json.loads(all_fields.get("facts", "[]")) if all_fields else []
+            if self.redis_client:
+                # Use Redis if available
+                all_fields = self.redis_client.hgetall(self.cache_key)
+                facts = json.loads(all_fields.get("facts", "[]")) if all_fields else []
+                last_updated = all_fields.get("last_updated")
+            else:
+                # Use JSON file cache
+                facts = self.knowledge_cache.get("facts", [])
+                last_updated = self.knowledge_cache.get("last_updated")
 
             print(f"📊 Cache Statistics:")
             print(f"   - Total facts: {len(facts)}")
@@ -879,7 +891,6 @@ class ThaiHealthcareQA:
                 for fact_type, count in sorted(types_count.items()):
                     print(f"     - {fact_type}: {count}")
 
-                last_updated = all_fields.get("last_updated")
                 if last_updated:
                     print(f"   - Last updated: {last_updated}")
         except Exception as e:
@@ -887,11 +898,21 @@ class ThaiHealthcareQA:
 
     def clear_cache(self):
         """Clear the knowledge cache"""
-        self.knowledge_cache = {"facts": [], "last_updated": None, "version": "1.0"}
         try:
+            if self.redis_client:
+                # Clear Redis cache
+                self.redis_client.delete(self.cache_key)
+                print("🗑️  Redis cache cleared!")
+            
+            # Clear local cache
+            self.knowledge_cache = {"facts": [], "last_updated": None, "version": "1.0"}
+            
+            # Remove JSON file if exists
             if os.path.exists(self.knowledge_cache_file):
                 os.remove(self.knowledge_cache_file)
-            print("🗑️  Knowledge cache cleared")
+                print("🗑️  JSON cache file cleared!")
+            
+            print("🗑️  All caches cleared!")
         except Exception as e:
             print(f"❌ Error clearing cache: {e}")
 
