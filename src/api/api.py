@@ -8,6 +8,7 @@ from typing import Optional
 import sys
 from pathlib import Path
 import re
+import os
 from contextlib import asynccontextmanager
 
 # Add src to path for imports
@@ -24,6 +25,13 @@ from config.settings import DEFAULT_CONFIG
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+# Load matching sensitivity threshold from environment variable, fallback to 0.5 if not set
+try:
+    MATCHING_SENSITIVITY_THRESHOLD = float(os.getenv("MATCHING_SENSITIVITY_THRESHOLD", "0.5"))
+except ValueError:
+    MATCHING_SENSITIVITY_THRESHOLD = 0.5
+    logger.warning("Invalid MATCHING_SENSITIVITY_THRESHOLD in .env, using default 0.5")
 
 # Global variables for system components
 search_engine: Optional[SearchEngine] = None
@@ -110,10 +118,6 @@ def extract_choices(question: str) -> dict:
             if clean_text:
                 choices[choice_letter] = clean_text
     
-    # Debug logging
-    logger.info(f"Input question: {question}")
-    logger.info(f"Extracted choices: {choices}")
-    
     return choices
 
 def analyze_answer_with_rag(question: str, choices: dict) -> str:
@@ -139,7 +143,7 @@ def analyze_answer_with_rag(question: str, choices: dict) -> str:
             matches = sum(1 for word in choice_words if word in rag_answer or word in context_text)
             
             # If significant portion of choice appears in answer/context, consider it correct
-            if len(choice_words) > 0 and matches / len(choice_words) > 0.3:
+            if len(choice_words) > 0 and matches / len(choice_words) > MATCHING_SENSITIVITY_THRESHOLD:
                 selected_choices.append(choice_key)
         
         # If no clear matches, try semantic similarity approach
@@ -155,13 +159,15 @@ def analyze_answer_with_rag(question: str, choices: dict) -> str:
         
         # Default fallback
         if not selected_choices:
-            selected_choices = ['ก']  # Default to first choice if uncertain
+            # Default to the first available choice if uncertain
+            selected_choices = [next(iter(choices.keys()), "")]
         
         return ", ".join(selected_choices)
         
     except Exception as e:
         logger.error(f"Error in RAG analysis: {e}")
-        return "ก"  # Default answer
+        # Default to the first available choice or an empty string if no choices exist
+        return next(iter(choices.keys()), "")
 
 @app.post("/answer", response_model=AnswerResponse)
 async def answer_question(request: QuestionRequest):
@@ -228,4 +234,5 @@ async def get_stats():
 
 if __name__ == "__main__":
     import uvicorn
+    import os
     uvicorn.run(app, host="0.0.0.0", port=8001)

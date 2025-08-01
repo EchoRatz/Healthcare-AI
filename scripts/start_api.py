@@ -24,9 +24,9 @@ def main():
     
     try:
         uvicorn.run(
-            "src.api.app:app",
+            "src.api.api:app",
             host="0.0.0.0",
-            port=8000,
+            port=8001,
             reload=True,
             log_level="info"
         )

@@ -58,3 +58,62 @@
 2025-08-01 11:10:51,085 - __main__ - INFO - Input question: อะไรคือสิ่งสำคัญสำหรับสุขภาพ? ก.การนอนหลับเพียงพอ ข.การออกกำลังกาย ค.การรับประทานอาหารที่มีประโยชน์ ง.ทั้งหมดข้างต้น
 2025-08-01 11:10:51,086 - __main__ - INFO - Extracted choices: {'ก': 'การนอนหลับเพียงพอ', 'ข': 'การออกกำลังกาย', 'ค': 'การรับประทานอาหารที่มีประโยชน์', 'ง': 'ทั้งหมดข้างต้น'}
 2025-08-01 11:10:51,086 - __main__ - INFO - Processing question with 4 choices
+2025-08-01 11:37:20,105 - __main__ - INFO - Shutting down Healthcare-AI system...
+2025-08-01 11:44:15,730 - src.api.api - INFO - Initializing Healthcare-AI system...
+2025-08-01 11:44:15,731 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 11:44:21,687 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 11:44:21,688 - database.search_engine - INFO - Initialized search engine
+2025-08-01 11:44:21,688 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 11:44:21,855 - src.api.api - INFO - System initialized with 5 documents
+2025-08-01 11:45:26,845 - src.api.api - INFO - Shutting down Healthcare-AI system...
+2025-08-01 11:45:32,816 - src.api.api - INFO - Initializing Healthcare-AI system...
+2025-08-01 11:45:32,817 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 11:45:37,844 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 11:45:37,844 - database.search_engine - INFO - Initialized search engine
+2025-08-01 11:45:37,844 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 11:45:38,056 - src.api.api - INFO - System initialized with 5 documents
+2025-08-01 11:45:44,045 - src.api.api - INFO - Initializing Healthcare-AI system...
+2025-08-01 11:45:44,046 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 11:45:48,822 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 11:45:48,822 - database.search_engine - INFO - Initialized search engine
+2025-08-01 11:45:48,822 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 11:45:49,050 - src.api.api - INFO - System initialized with 5 documents
+2025-08-01 11:49:57,319 - src.api.api - INFO - Initializing Healthcare-AI system...
+2025-08-01 11:49:57,320 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 11:50:02,106 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 11:50:02,107 - database.search_engine - INFO - Initialized search engine
+2025-08-01 11:50:02,107 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 11:50:02,327 - src.api.api - INFO - System initialized with 5 documents
+2025-08-01 11:50:34,642 - src.api.api - INFO - Input question: อะไรคือสิ่งสำคัญสำหรับสุขภาพ? ก.การนอนหลับเพียงพอ ข.การออกกำลังกาย ค.การรับประทานอาหารที่มีประโยชน์ ง.ทั้งหมดข้างต้น
+2025-08-01 11:50:34,643 - src.api.api - INFO - Extracted choices: {'ก': 'การนอนหลับเพียงพอ', 'ข': 'การออกกำลังกาย', 'ค': 'การรับประทานอาหารที่มีประโยชน์', 'ง': 'ทั้งหมดข้างต้น'}
+2025-08-01 11:50:34,643 - src.api.api - INFO - Processing question with 4 choices
+2025-08-01 11:52:54,306 - src.api.api - INFO - Shutting down Healthcare-AI system...
+2025-08-01 11:53:25,884 - src.api.api - INFO - Initializing Healthcare-AI system...
+2025-08-01 11:53:25,884 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 11:53:30,802 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 11:53:30,803 - database.search_engine - INFO - Initialized search engine
+2025-08-01 11:53:30,803 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 11:53:30,986 - src.api.api - INFO - System initialized with 5 documents
+2025-08-01 11:54:57,781 - src.api.api - INFO - Shutting down Healthcare-AI system...
+2025-08-01 11:55:05,569 - src.api.api - INFO - Initializing Healthcare-AI system...
+2025-08-01 11:55:05,570 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 11:55:13,258 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 11:55:13,258 - database.search_engine - INFO - Initialized search engine
+2025-08-01 11:55:13,259 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 11:55:13,465 - src.api.api - INFO - System initialized with 5 documents
+2025-08-01 11:55:28,623 - __main__ - INFO - Initializing Healthcare-AI system...
+2025-08-01 11:55:28,623 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 11:55:33,311 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 11:55:33,312 - database.search_engine - INFO - Initialized search engine
+2025-08-01 11:55:33,313 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 11:55:33,452 - __main__ - INFO - System initialized with 5 documents
+2025-08-01 11:55:36,774 - __main__ - INFO - Shutting down Healthcare-AI system...
+2025-08-01 11:55:46,516 - __main__ - INFO - Initializing Healthcare-AI system...
+2025-08-01 11:55:46,516 - database.vector_store - INFO - Initialized vector store: 384D, L2
+2025-08-01 11:55:51,276 - database.text_processor - INFO - Initialized text processor with model: paraphrase-multilingual-MiniLM-L12-v2
+2025-08-01 11:55:51,277 - database.search_engine - INFO - Initialized search engine
+2025-08-01 11:55:51,277 - rag.rag_pipeline - INFO - Initialized RAG pipeline
+2025-08-01 11:55:51,483 - __main__ - INFO - System initialized with 5 documents
+2025-08-01 11:55:54,374 - __main__ - INFO - Input question: อะไรคือสิ่งสำคัญสำหรับสุขภาพ? ก.การนอนหลับเพียงพอ ข.การออกกำลังกาย ค.การรับประทานอาหารที่มีประโยชน์ ง.ทั้งหมดข้างต้น
+2025-08-01 11:55:54,374 - __main__ - INFO - Extracted choices: {'ก': 'การนอนหลับเพียงพอ', 'ข': 'การออกกำลังกาย', 'ค': 'การรับประทานอาหารที่มีประโยชน์', 'ง': 'ทั้งหมดข้างต้น'}
+2025-08-01 11:55:54,375 - __main__ - INFO - Processing question with 4 choices
