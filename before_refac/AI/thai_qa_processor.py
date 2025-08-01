@@ -679,6 +679,8 @@ class ThaiHealthcareQA:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_file_path = f"thai_qa_answers_{timestamp}.csv"
 
+        results = []
+        
         try:
             # Read CSV file
             with open(csv_file_path, "r", encoding="utf-8") as file:
@@ -686,61 +688,41 @@ class ThaiHealthcareQA:
                 questions = list(reader)
 
             total_questions = len(questions)
-            total_batches = (total_questions + batch_size - 1) // batch_size
-
             print(f"📝 พบคำถามทั้งหมด: {total_questions} ข้อ")
             print("=" * 60)
 
-            all_results = []
+            # Process each question
+            for i, row in enumerate(questions, 1):
+                question_id = row["id"]
+                question_text = row["question"]
 
-            for batch_num in range(total_batches):
-                start_idx = batch_num * batch_size
-                end_idx = min(start_idx + batch_size, total_questions)
-                batch_questions = questions[start_idx:end_idx]
+                print(f"⏳ กำลังประมวลผลคำถาม {i}/{total_questions} (ID: {question_id})")
 
-                print(
-                    f"🔄 กำลังประมวลผล Batch {batch_num + 1}/{total_batches} (คำถาม {start_idx + 1}-{end_idx})"
-                )
+                try:
+                    # Get answer from AI
+                    answer = self.answer_question(question_text)
 
-                batch_results = []
+                    # Clean up answer (remove extra whitespace, newlines)
+                    clean_answer = " ".join(answer.split())
+                    
+                    results.append({
+                        "id": question_id,
+                        "question": question_text,
+                        "answer": clean_answer,
+                    })
+                    
+                    print(f"✅ คำตอบ: {clean_answer}")
 
-                # Process each question
-                for i, row in enumerate(questions, 1):
-                    question_id = row["id"]
-                    question_text = row["question"]
+                except Exception as e:
+                    error_msg = f"ข้อผิดพลาด: {str(e)}"
+                    results.append({
+                        "id": question_id,
+                        "question": question_text,
+                        "answer": error_msg,
+                    })
+                    print(f"❌ {error_msg}")
 
-                    print(
-                        f"⏳ กำลังประมวลผลคำถาม {i}/{total_questions} (ID: {question_id})"
-                    )
-
-                    try:
-                        # Get answer from AI
-                        answer = self.answer_question(question_text)
-
-                        # Clean up answer (remove extra whitespace, newlines)
-                        clean_answer = " ".join(answer.split())
-                        if clean_format:
-                            batch_results.append(
-                                {
-                                    "id": question_id,
-                                    "answer": clean_answer,
-                                }
-                            )
-                        else:
-                            batch_results.append(
-                                {
-                                    "id": question_id,
-                                    "question": question_text,
-                                    "answer": clean_answer,
-                                }
-                            )
-                        print(f"✅ คำตอบ: {clean_answer}")
-
-                    except Exception as e:
-                        error_msg = f"ข้อผิดพลาด: {str(e)}"
-                        print(f"❌ {error_msg}")
-
-            all_results.extend(batch_results)
+                print("-" * 40)
 
             # Save results to CSV
             with open(output_file_path, "w", encoding="utf-8", newline="") as file:
