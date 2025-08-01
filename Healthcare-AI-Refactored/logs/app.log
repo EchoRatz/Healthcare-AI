@@ -5,3 +5,35 @@
 2025-08-01 16:10:58,303 - __main__ - INFO - Starting Healthcare-AI system
 2025-08-01 16:11:13,315 - core.use_cases.ProcessQuestion - INFO - Processing question: fu...
 2025-08-01 16:11:13,316 - core.use_cases.ProcessQuestion - WARNING - No relevant documents found
+2025-08-02 04:55:09,926 - infrastructure.database.DataSourceManager - ERROR - Failed to load data source hospital_micro_facts: Document.__init__() got an unexpected keyword argument 'doc_id'
+2025-08-02 04:55:09,926 - infrastructure.database.DataSourceManager - ERROR - Failed to load data source results_doc: Document.__init__() got an unexpected keyword argument 'doc_id'
+2025-08-02 04:55:09,927 - infrastructure.database.DataSourceManager - ERROR - Failed to load data source results_doc2: Document.__init__() got an unexpected keyword argument 'doc_id'
+2025-08-02 04:55:09,928 - infrastructure.database.DataSourceManager - ERROR - Failed to load data source results_doc3: Document.__init__() got an unexpected keyword argument 'doc_id'
+2025-08-02 04:55:09,928 - infrastructure.database.DataSourceManager - ERROR - Failed to load data source hospital_micro_facts: Document.__init__() got an unexpected keyword argument 'doc_id'
+2025-08-02 04:55:09,928 - infrastructure.database.DataSourceManager - INFO - Loaded 0 data sources
+2025-08-02 04:55:22,739 - infrastructure.database.DataSourceManager - INFO - Loaded data source: hospital_micro_facts (14,878 chars)
+2025-08-02 04:55:39,429 - infrastructure.database.DataSourceManager - INFO - Loaded data source: hospital_micro_facts (14,878 chars)
+2025-08-02 04:55:39,429 - infrastructure.database.DataSourceManager - INFO - Loaded data source: results_doc (34,350 chars)
+2025-08-02 04:55:39,430 - infrastructure.database.DataSourceManager - INFO - Loaded data source: results_doc2 (44,669 chars)
+2025-08-02 04:55:39,431 - infrastructure.database.DataSourceManager - INFO - Loaded data source: results_doc3 (221,003 chars)
+2025-08-02 04:55:39,431 - infrastructure.database.DataSourceManager - INFO - Loaded data source: hospital_micro_facts (14,878 chars)
+2025-08-02 04:55:39,431 - infrastructure.database.DataSourceManager - INFO - Loaded 4 data sources
+2025-08-02 04:55:59,977 - infrastructure.database.DataSourceManager - INFO - Loaded data source: hospital_micro_facts (14,878 chars)
+2025-08-02 04:55:59,978 - infrastructure.database.DataSourceManager - INFO - Loaded data source: results_doc (34,350 chars)
+2025-08-02 04:55:59,978 - infrastructure.database.DataSourceManager - INFO - Loaded data source: results_doc2 (44,669 chars)
+2025-08-02 04:55:59,979 - infrastructure.database.DataSourceManager - INFO - Loaded data source: results_doc3 (221,003 chars)
+2025-08-02 04:55:59,980 - infrastructure.database.DataSourceManager - INFO - Loaded data source: hospital_micro_facts (14,878 chars)
+2025-08-02 04:55:59,980 - infrastructure.database.DataSourceManager - INFO - Loaded 4 data sources
+2025-08-02 04:56:32,337 - __main__ - INFO - Starting Healthcare-AI system
+2025-08-02 04:56:32,338 - infrastructure.database.DataSourceManager - INFO - Loaded data source: results_doc (34,350 chars)
+2025-08-02 04:56:32,338 - infrastructure.database.DataSourceManager - INFO - Loaded data source: results_doc2 (44,669 chars)
+2025-08-02 04:56:32,339 - infrastructure.database.DataSourceManager - INFO - Loaded data source: results_doc3 (221,003 chars)
+2025-08-02 04:56:32,340 - infrastructure.database.DataSourceManager - INFO - Loaded data source: hospital_micro_facts (14,878 chars)
+2025-08-02 04:56:32,340 - infrastructure.database.DataSourceManager - INFO - Loaded 4 data sources
+2025-08-02 04:56:32,340 - __main__ - ERROR - System error: 'FAISSVectorStore' object has no attribute 'add_document'
+2025-08-02 04:56:45,554 - __main__ - INFO - Starting Healthcare-AI system
+2025-08-02 04:56:45,556 - infrastructure.database.DataSourceManager - INFO - Loaded data source: results_doc (34,350 chars)
+2025-08-02 04:56:45,556 - infrastructure.database.DataSourceManager - INFO - Loaded data source: results_doc2 (44,669 chars)
+2025-08-02 04:56:45,557 - infrastructure.database.DataSourceManager - INFO - Loaded data source: results_doc3 (221,003 chars)
+2025-08-02 04:56:45,557 - infrastructure.database.DataSourceManager - INFO - Loaded data source: hospital_micro_facts (14,878 chars)
+2025-08-02 04:56:45,557 - infrastructure.database.DataSourceManager - INFO - Loaded 4 data sources

@@ -1,0 +1,388 @@
+# Hospital Data - Micro Facts
+# ข้อมูลโรงพยาบาล - แยกเป็น fact เล็กๆ แต่ละข้อมูล
+
+## Department Facts - ข้อมูลแผนก
+
+Department Cardiology exists
+Department Cardiology has department ID CARD
+Department Cardiology is headed by Dr. Sarah Johnson
+Department Cardiology is located in Building A
+Department Cardiology is on Floor 3
+Department Cardiology phone number is +1-555-2001
+Department Cardiology email is cardiology@hospital.com
+Department Cardiology provides Echocardiography service
+Department Cardiology provides Cardiac Catheterization service
+Department Cardiology provides Stress Testing service
+Department Cardiology provides Pacemaker Implantation service
+Department Cardiology has 8 staff members
+Department Cardiology has 20 beds
+Department Cardiology operates 24/7
+Department Cardiology is emergency capable
+
+Department Endocrinology exists
+Department Endocrinology has department ID ENDO
+Department Endocrinology is headed by Dr. Michael Williams
+Department Endocrinology is located in Building B
+Department Endocrinology is on Floor 2
+Department Endocrinology phone number is +1-555-2002
+Department Endocrinology email is endocrinology@hospital.com
+Department Endocrinology provides Diabetes Management service
+Department Endocrinology provides Thyroid Treatment service
+Department Endocrinology provides Hormone Therapy service
+Department Endocrinology provides Metabolic Disorders service
+Department Endocrinology has 5 staff members
+Department Endocrinology has 12 beds
+Department Endocrinology operates from 08:00–18:00
+Department Endocrinology is not emergency capable
+
+Department Emergency exists
+Department Emergency has department ID EMER
+Department Emergency is headed by Dr. Emily Chen
+Department Emergency is located in Building A
+Department Emergency is on Floor 1
+Department Emergency phone number is +1-555-2003
+Department Emergency email is emergency@hospital.com
+Department Emergency provides Trauma Care service
+Department Emergency provides Critical Care service
+Department Emergency provides Emergency Surgery service
+Department Emergency provides Poison Control service
+Department Emergency has 15 staff members
+Department Emergency has 30 beds
+Department Emergency operates 24/7
+Department Emergency is emergency capable
+
+Department Orthopedics exists
+Department Orthopedics has department ID ORTH
+Department Orthopedics is headed by Dr. Robert Martinez
+Department Orthopedics is located in Building C
+Department Orthopedics is on Floor 2
+Department Orthopedics phone number is +1-555-2004
+Department Orthopedics email is orthopedics@hospital.com
+Department Orthopedics provides Joint Replacement service
+Department Orthopedics provides Fracture Treatment service
+Department Orthopedics provides Sports Medicine service
+Department Orthopedics provides Spine Surgery service
+Department Orthopedics has 12 staff members
+Department Orthopedics has 25 beds
+Department Orthopedics operates from 06:00–20:00
+Department Orthopedics is emergency capable
+
+## Doctor Facts - ข้อมูลแพทย์
+
+Dr. Sarah Johnson exists
+Dr. Sarah Johnson has staff ID D001
+Dr. Sarah Johnson is a Cardiologist
+Dr. Sarah Johnson works in Cardiology department
+Dr. Sarah Johnson phone number is +1-555-1001
+Dr. Sarah Johnson email is s.johnson@hospital.com
+Dr. Sarah Johnson license number is MD12345
+Dr. Sarah Johnson specializes in Interventional Cardiology
+Dr. Sarah Johnson specializes in Heart Failure
+Dr. Sarah Johnson has 15 years of experience
+Dr. Sarah Johnson graduated from Harvard Medical School
+Dr. Sarah Johnson status is Active
+Dr. Sarah Johnson works Monday 08:00–17:00
+Dr. Sarah Johnson has break Monday 12:00–13:00
+Dr. Sarah Johnson works Tuesday 08:00–17:00
+Dr. Sarah Johnson has break Tuesday 12:00–13:00
+Dr. Sarah Johnson works Wednesday 08:00–17:00
+Dr. Sarah Johnson has break Wednesday 12:00–13:00
+Dr. Sarah Johnson works Thursday 08:00–17:00
+Dr. Sarah Johnson has break Thursday 12:00–13:00
+Dr. Sarah Johnson works Friday 08:00–16:00
+Dr. Sarah Johnson has break Friday 12:00–13:00
+
+Dr. Michael Williams exists
+Dr. Michael Williams has staff ID D002
+Dr. Michael Williams is an Endocrinologist
+Dr. Michael Williams works in Endocrinology department
+Dr. Michael Williams phone number is +1-555-1002
+Dr. Michael Williams email is m.williams@hospital.com
+Dr. Michael Williams license number is MD67890
+Dr. Michael Williams specializes in Diabetes Management
+Dr. Michael Williams specializes in Thyroid Disorders
+Dr. Michael Williams has 12 years of experience
+Dr. Michael Williams graduated from Johns Hopkins Medical School
+Dr. Michael Williams status is Active
+Dr. Michael Williams works Monday 09:00–18:00
+Dr. Michael Williams has break Monday 13:00–14:00
+Dr. Michael Williams works Tuesday 09:00–18:00
+Dr. Michael Williams has break Tuesday 13:00–14:00
+Dr. Michael Williams works Wednesday 09:00–18:00
+Dr. Michael Williams has break Wednesday 13:00–14:00
+Dr. Michael Williams works Thursday 09:00–18:00
+Dr. Michael Williams has break Thursday 13:00–14:00
+Dr. Michael Williams works Friday 09:00–17:00
+Dr. Michael Williams has break Friday 13:00–14:00
+
+Dr. Emily Chen exists
+Dr. Emily Chen has staff ID D003
+Dr. Emily Chen is an Emergency Medicine Physician
+Dr. Emily Chen works in Emergency department
+Dr. Emily Chen phone number is +1-555-1003
+Dr. Emily Chen email is e.chen@hospital.com
+Dr. Emily Chen license number is MD11111
+Dr. Emily Chen specializes in Trauma Care
+Dr. Emily Chen specializes in Critical Care
+Dr. Emily Chen has 8 years of experience
+Dr. Emily Chen graduated from Stanford Medical School
+Dr. Emily Chen status is Active
+Dr. Emily Chen works Monday–Wednesday 07:00–19:00
+Dr. Emily Chen has break Monday–Wednesday 12:00–13:00
+
+Dr. Robert Martinez exists
+Dr. Robert Martinez has staff ID D004
+Dr. Robert Martinez is an Orthopedic Surgeon
+Dr. Robert Martinez works in Orthopedics department
+Dr. Robert Martinez phone number is +1-555-1004
+Dr. Robert Martinez email is r.martinez@hospital.com
+Dr. Robert Martinez license number is MD22222
+Dr. Robert Martinez specializes in Joint Replacement
+Dr. Robert Martinez specializes in Sports Medicine
+Dr. Robert Martinez has 20 years of experience
+Dr. Robert Martinez graduated from Mayo Clinic Medical School
+Dr. Robert Martinez status is Active
+Dr. Robert Martinez works Tuesday 07:00–16:00
+Dr. Robert Martinez has break Tuesday 12:00–13:00
+Dr. Robert Martinez works Wednesday 07:00–16:00
+Dr. Robert Martinez has break Wednesday 12:00–13:00
+Dr. Robert Martinez works Thursday 07:00–16:00
+Dr. Robert Martinez has break Thursday 12:00–13:00
+Dr. Robert Martinez works Friday 07:00–16:00
+Dr. Robert Martinez has break Friday 12:00–13:00
+
+## Room Facts - ข้อมูลห้อง
+
+Room 101 exists
+Room 101 has room ID R001
+Room 101 is a Consultation room
+Room 101 belongs to Cardiology department
+Room 101 is located in Building A
+Room 101 is on Floor 3
+Room 101 is room number 101
+Room 101 has capacity for 1 person
+Room 101 has ECG Machine
+Room 101 has Blood Pressure Monitor
+Room 101 has Examination Table
+Room 101 status is Available
+Room 101 is assigned to D001 (Dr. Sarah Johnson)
+
+Room 102 exists
+Room 102 has room ID R002
+Room 102 is a Consultation room
+Room 102 belongs to Cardiology department
+Room 102 is located in Building A
+Room 102 is on Floor 3
+Room 102 is room number 102
+Room 102 has capacity for 1 person
+Room 102 has Echocardiogram
+Room 102 has Examination Table
+Room 102 has Computer Terminal
+Room 102 status is Occupied
+Room 102 is assigned to D001 (Dr. Sarah Johnson)
+Room 102 current patient is P001
+Room 102 is occupied until July 26, 2024, 11:00 AM
+
+Room 201 exists
+Room 201 has room ID R003
+Room 201 is a Consultation room
+Room 201 belongs to Endocrinology department
+Room 201 is located in Building B
+Room 201 is on Floor 2
+Room 201 is room number 201
+Room 201 has capacity for 1 person
+Room 201 has Scale
+Room 201 has Height Measure
+Room 201 has Examination Table
+Room 201 has Computer Terminal
+Room 201 status is Available
+Room 201 is assigned to D002 (Dr. Michael Williams)
+
+ER Bay 1 exists
+ER Bay 1 has room ID R004
+ER Bay 1 is an Emergency room
+ER Bay 1 belongs to Emergency department
+ER Bay 1 is located in Building A
+ER Bay 1 is on Floor 1
+ER Bay 1 has capacity for 1 person
+ER Bay 1 has Ventilator
+ER Bay 1 has Defibrillator
+ER Bay 1 has IV Pumps
+ER Bay 1 has Monitoring Equipment
+ER Bay 1 status is Available
+ER Bay 1 is assigned to D003 (Dr. Emily Chen)
+
+Operating Room OR01 exists
+Operating Room OR01 has room ID R005
+Operating Room OR01 is an Operating room
+Operating Room OR01 belongs to Orthopedics department
+Operating Room OR01 is located in Building C
+Operating Room OR01 is on Floor 3
+Operating Room OR01 is OR 1
+Operating Room OR01 has capacity for 8 persons
+Operating Room OR01 has Surgical Table
+Operating Room OR01 has Anesthesia Machine
+Operating Room OR01 has C-Arm
+Operating Room OR01 has Surgical Instruments
+Operating Room OR01 status is Under Maintenance
+Operating Room OR01 maintenance until July 27, 2024, 08:00 AM
+Operating Room OR01 is assigned to D004 (Dr. Robert Martinez)
+
+Room 301 exists
+Room 301 has room ID R006
+Room 301 is an Inpatient room
+Room 301 belongs to Cardiology department
+Room 301 is located in Building A
+Room 301 is on Floor 3
+Room 301 is room number 301
+Room 301 has capacity for 2 persons
+Room 301 has Hospital Beds
+Room 301 has Cardiac Monitors
+Room 301 has IV Stands
+Room 301 status is Occupied
+Room 301 current patient is P001
+Room 301 is occupied until July 28, 2024, 10:00 AM
+
+## Queue Facts - ข้อมูลคิว
+
+Cardiology department is currently serving C042
+Cardiology department next queue number is C047
+Cardiology department has 5 patients waiting
+Queue C043 is assigned to patient P001
+Queue C043 is scheduled for 10:30
+Queue C043 status is waiting
+Queue C044 is assigned to patient P003
+Queue C044 is scheduled for 11:00
+Queue C044 status is waiting
+Queue C045 is assigned to patient P005
+Queue C045 is scheduled for 11:30
+Queue C045 status is waiting
+Queue C046 is assigned to patient P001
+Queue C046 is scheduled for 14:51
+Queue C046 status is waiting
+Queue C046 reason is Sick
+Queue C046 was booked at 2025-08-01 13:21
+Queue C047 is assigned to patient P002
+Queue C047 is scheduled for 22:24
+Queue C047 status is waiting
+Queue C047 reason is sick
+Queue C047 was booked at 2025-08-01 20:24
+
+Endocrinology department is currently serving E021
+Endocrinology department next queue number is E023
+Endocrinology department has 2 patients waiting
+Queue E022 is assigned to patient P002
+Queue E022 is scheduled for 14:30
+Queue E022 status is waiting
+Queue E023 is assigned to patient P006
+Queue E023 is scheduled for 15:00
+Queue E023 status is waiting
+
+Emergency department is currently serving ER006
+Emergency department next queue number is ER009
+Emergency department has 3 patients waiting
+Queue ER007 is assigned to patient P015
+Queue ER007 is scheduled for 16:00
+Queue ER007 status is waiting
+Queue ER008 is assigned to patient P018
+Queue ER008 is scheduled for 16:30
+Queue ER008 status is waiting
+Queue ER009 is assigned to patient P026
+Queue ER009 is scheduled for 21:18
+Queue ER009 status is waiting
+Queue ER009 reason is Trauma
+Queue ER009 was booked at 2025-08-01 20:18
+
+Orthopedics department is currently serving O013
+Orthopedics department next queue number is O016
+Orthopedics department has 3 patients waiting
+Queue O014 is assigned to patient P012
+Queue O014 is scheduled for 08:00
+Queue O014 status is waiting
+Queue O015 is assigned to patient P020
+Queue O015 is scheduled for 08:30
+Queue O015 status is waiting
+Queue O016 is assigned to patient P001
+Queue O016 is scheduled for 21:08
+Queue O016 status is waiting
+Queue O016 reason is Check-up
+Queue O016 was booked at 2025-08-01 20:08
+
+## Patient Facts - ข้อมูลผู้ป่วย
+
+Patient P001 exists
+Patient P001 name is John Doe
+Patient P001 date of birth is May 15, 1990
+Patient P001 gender is Male
+Patient P001 phone number is +1-555-0123
+Patient P001 email is john.doe@email.com
+Patient P001 address is 123 Main St, City, State 12345
+Patient P001 emergency contact is Jane Doe – +1-555-0124
+Patient P001 insurance is Blue Cross Blue Shield – Policy BC123456
+Patient P001 is allergic to Penicillin
+Patient P001 is allergic to Peanuts
+Patient P001 takes Lisinopril 10 mg once daily
+Patient P001 takes Metformin 500 mg twice daily
+Patient P001 takes Glipizide 5 mg once daily
+Patient P001 vitals on 2024-07-20: BP 120/80, HR 72, Temp 98.6 °F, Weight 175 lbs
+Patient P001 vitals on 2024-07-15: BP 118/78, HR 68, Temp 98.4 °F, Weight 174 lbs
+Patient P001 has condition Hypertension
+Patient P001 has condition Type 2 Diabetes
+
+Patient P002 exists
+Patient P002 name is Sarah Smith
+Patient P002 date of birth is December 3, 1985
+Patient P002 gender is Female
+Patient P002 phone number is +1-555-0456
+Patient P002 email is sarah.smith@email.com
+Patient P002 address is 456 Oak Ave, City, State 12345
+Patient P002 emergency contact is Mike Smith – +1-555-0457
+Patient P002 insurance is Aetna – Policy AE789012
+Patient P002 is allergic to Sulfa drugs
+Patient P002 takes Levothyroxine 75 mcg once daily
+Patient P002 vitals on 2024-07-18: BP 110/70, HR 65, Temp 98.2 °F, Weight 140 lbs
+Patient P002 has condition Hypothyroidism
+
+Patient P003 exists
+Patient P003 name is Sompong Jaidee
+Patient P003 date of birth is March 22, 1988
+Patient P003 gender is Male
+Patient P003 phone number is +66-2-555-1001
+Patient P003 email is sompong.j@gmail.com
+Patient P003 address is ถนนสุขุมวิท แขวงคลองเตย เขตคลองเตย กรุงเทพฯ 10110
+Patient P003 emergency contact is นางสมศรี ใจดี – +66-2-555-1002
+Patient P003 insurance is บริษัทประกันสุขภาพ – Policy TH001234
+Patient P003 is allergic to Aspirin
+Patient P003 takes Atenolol 50 mg once daily
+Patient P003 has condition Mild Hypertension
+Patient P003 vitals on 2024-07-22: BP 135/85, HR 75, Temp 37.1 °C, Weight 76.2 kg
+Patient P003 vitals on 2025-08-01: BP 120/80, HR 72, Temp 36.8 °C, Weight 70 kg
+
+## Appointment Facts - ข้อมูลการนัดหมาย
+
+Appointment A001 exists
+Appointment A001 is for patient P001 (John Doe)
+Appointment A001 is with Dr. Johnson
+Appointment A001 is in Cardiology department
+Appointment A001 is scheduled for July 26, 2024
+Appointment A001 is scheduled at 10:00
+Appointment A001 status is Scheduled
+Appointment A001 reason is Follow-up for hypertension
+
+Appointment A002 exists
+Appointment A002 is for patient P002 (Sarah Smith)
+Appointment A002 is with Dr. Williams
+Appointment A002 is in Endocrinology department
+Appointment A002 is scheduled for July 28, 2024
+Appointment A002 is scheduled at 14:30
+Appointment A002 status is Scheduled
+Appointment A002 reason is Thyroid function check
+
+Appointment A003 exists
+Appointment A003 is for patient P003 (Sompong Jaidee)
+Appointment A003 is with Dr. Johnson
+Appointment A003 is in Cardiology department
+Appointment A003 is scheduled for July 29, 2024
+Appointment A003 is scheduled at 09:00
+Appointment A003 status is Scheduled
+Appointment A003 reason is Blood pressure monitoring

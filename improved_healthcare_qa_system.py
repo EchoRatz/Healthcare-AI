@@ -227,6 +227,7 @@ class ImprovedHealthcareQA:
             "Healthcare-AI-Refactored/src/infrastructure/results_doc/direct_extraction_corrected.txt",
             "Healthcare-AI-Refactored/src/infrastructure/results_doc2/direct_extraction_corrected.txt",
             "Healthcare-AI-Refactored/src/infrastructure/results_doc3/direct_extraction_corrected.txt",
+            "Healthcare-AI-Refactored/src/infrastructure/result_mcp/hospital_micro_facts.txt",
         ]
         
         for i, doc_file in enumerate(doc_files, 1):

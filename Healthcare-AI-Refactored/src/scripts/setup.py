@@ -28,7 +28,8 @@ def main():
             "data/csv_input",
             "data/csv_processed",
             "data/csv_errors",
-            "logs"
+            "logs",
+            "src/infrastructure/data_sources"
         ]
         
         for directory in directories:
