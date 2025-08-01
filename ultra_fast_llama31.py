@@ -115,7 +115,7 @@ class UltraFastQA:
         return context[:max_chars] if context else self.documents[:max_chars]
     
     def query_llama31_with_context(self, question: str, choices: Dict[str, str]) -> Tuple[List[str], float]:
-        """Query Llama 3.1 with relevant context - FAST version"""
+        """Query Llama 3.1 with relevant context - handles multiple answers"""
         # Get relevant context
         context = self.quick_context_search(question)
         
@@ -132,8 +132,9 @@ class UltraFastQA:
 {choices_text}
 
 วิเคราะห์ตามข้อมูลอ้างอิงและเลือกคำตอบที่ถูกต้องที่สุด
+**หมายเหตุ: อาจมีคำตอบถูกต้องมากกว่า 1 ข้อ**
 
-ตอบด้วย: [ตัวอักษร]
+ตอบในรูปแบบ: ก หรือ ข,ง หรือ ก,ค,ง (คั่นด้วยคอมม่า)
 
 คำตอบ:"""
 
@@ -146,26 +147,27 @@ class UltraFastQA:
                     'stream': False,
                     'options': {
                         'temperature': 0.1,
-                        'num_predict': 50,  # Keep it short for speed
+                        'num_predict': 80,  # Allow more tokens for multiple answers
                         'top_p': 0.9
                     }
                 },
-                timeout=20  # Shorter timeout for speed
+                timeout=25  # Slightly longer for multiple answer processing
             )
             
             if response.status_code == 200:
-                result = response.json()['response']
+                result = response.json()['response'].strip()
                 
-                # Parse answer - look for [ก-ง] pattern
-                answer_match = re.search(r'\[([ก-ง])\]|^([ก-ง])|คำตอบ[:\s]*([ก-ง])', result)
-                if answer_match:
-                    answer = answer_match.group(1) or answer_match.group(2) or answer_match.group(3)
-                    return [answer], 0.85
+                # Extract multiple answers - look for various patterns
+                answers = self._extract_multiple_answers(result)
+                
+                if answers:
+                    confidence = 0.9 if len(answers) > 1 else 0.85
+                    return answers, confidence
                 else:
-                    # Fallback: find any choice letter
-                    fallback_match = re.search(r'[ก-ง]', result)
-                    if fallback_match:
-                        return [fallback_match.group()], 0.7
+                    # Fallback to single answer detection
+                    single_answer = self._extract_single_answer(result)
+                    if single_answer:
+                        return [single_answer], 0.7
             
             # Default fallback 
             return ['ข'], 0.4
@@ -173,6 +175,74 @@ class UltraFastQA:
         except Exception as e:
             print(f"    ⚠️  LLM timeout, using fallback")
             return ['ข'], 0.3
+    
+    def _extract_multiple_answers(self, text: str) -> List[str]:
+        """Extract multiple Thai choice answers from text"""
+        # Clean the text
+        text = text.strip().lower()
+        
+        # Pattern 1: "ข,ง" or "ก,ค,ง" 
+        comma_pattern = re.search(r'([ก-ง](?:,\s*[ก-ง])+)', text)
+        if comma_pattern:
+            answers_str = comma_pattern.group(1)
+            answers = [a.strip() for a in answers_str.split(',')]
+            return [a for a in answers if a in ['ก', 'ข', 'ค', 'ง']]
+        
+        # Pattern 2: "ข และ ง" or "ก และ ค และ ง"
+        and_pattern = re.search(r'([ก-ง](?:\s*และ\s*[ก-ง])+)', text)
+        if and_pattern:
+            answers_str = and_pattern.group(1)
+            answers = re.findall(r'[ก-ง]', answers_str)
+            return list(set(answers))  # Remove duplicates
+        
+        # Pattern 3: Multiple separate mentions like "ก ข ง" (but not in question text)
+        # Look for multiple choice characters that appear after common answer keywords
+        answer_section_patterns = [
+            r'(?:คำตอบ|ตอบ|เลือก|ข้อ)[:\s]*(.+)',  # After answer keywords
+            r'(.{0,50})$',  # Last 50 characters (likely the answer)
+        ]
+        
+        for section_pattern in answer_section_patterns:
+            section_match = re.search(section_pattern, text, re.IGNORECASE)
+            if section_match:
+                answer_section = section_match.group(1)
+                # Only look for multiple chars in the answer section
+                section_chars = re.findall(r'[ก-ง]', answer_section)
+                if len(section_chars) > 1:
+                    unique_answers = list(dict.fromkeys(section_chars))
+                    # Only return if reasonable number and no common Thai words
+                    if 2 <= len(unique_answers) <= 4:
+                        # Avoid cases where chars are part of Thai words
+                        if not any(word in answer_section for word in ['คือ', 'เป็น', 'คำตอบ', 'ข้อ']):
+                            return unique_answers
+        
+        return []
+    
+    def _extract_single_answer(self, text: str) -> str:
+        """Extract single Thai choice answer from text"""
+        # Look for various single answer patterns
+        patterns = [
+            r'\[([ก-ง])\]',                    # [ก]
+            r'^([ก-ง])',                       # ก at start of line
+            r'คำตอบ[:\s]*(?:คือ\s*)?([ก-ง])',  # คำตอบ: ก or คำตอบคือ ก
+            r'ตอบ[:\s]*([ก-ง])',               # ตอบ: ก
+            r'เลือก\s*([ก-ง])',                # เลือก ก
+            r'([ก-ง])\s*(?:คือ|เป็น)',        # ก คือ
+            r'(?:คือ|เป็น)\s*([ก-ง])',         # คือ ก
+            r'([ก-ง])\s*เป็นคำตอบ',            # ก เป็นคำตอบ
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, text.lower())
+            if match:
+                return match.group(1)
+        
+        # Last resort: any single Thai choice character
+        choice_match = re.search(r'[ก-ง]', text)
+        if choice_match:
+            return choice_match.group()
+        
+        return None
     
     def process_ultra_fast(self, test_file: str) -> List[Dict]:
         """Ultra fast processing - 10-15 minutes for 500 questions"""

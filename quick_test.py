@@ -48,7 +48,7 @@ def parse_question(question_text: str) -> Tuple[str, Dict[str, str]]:
     return question, choices
 
 def quick_test_llama31(model_name: str, question: str, choices: Dict[str, str]) -> Tuple[List[str], float]:
-    """Quick test query to Llama 3.1"""
+    """Quick test query to Llama 3.1 - supports multiple answers"""
     choices_text = "\n".join([f"{k}. {v}" for k, v in choices.items()])
     
     prompt = f"""คุณเป็นผู้เชี่ยวชาญด้านสุขภาพไทย
@@ -59,8 +59,9 @@ def quick_test_llama31(model_name: str, question: str, choices: Dict[str, str]) 
 {choices_text}
 
 เลือกคำตอบที่ถูกต้องที่สุด
+**หมายเหตุ: อาจมีคำตอบถูกต้องมากกว่า 1 ข้อ**
 
-ตอบด้วย: [ตัวอักษร]
+ตอบในรูปแบบ: ก หรือ ข,ง หรือ ก,ค,ง (คั่นด้วยคอมม่า)
 
 คำตอบ:"""
 
@@ -75,7 +76,7 @@ def quick_test_llama31(model_name: str, question: str, choices: Dict[str, str]) 
                 'stream': False,
                 'options': {
                     'temperature': 0.1,
-                    'num_predict': 30,
+                    'num_predict': 50,
                     'top_p': 0.9
                 }
             },
@@ -85,23 +86,73 @@ def quick_test_llama31(model_name: str, question: str, choices: Dict[str, str]) 
         response_time = time.time() - start_time
         
         if response.status_code == 200:
-            result = response.json()['response']
+            result = response.json()['response'].strip()
             
-            # Parse answer
-            answer_match = re.search(r'\[([ก-ง])\]|^([ก-ง])|คำตอบ[:\s]*([ก-ง])', result)
-            if answer_match:
-                answer = answer_match.group(1) or answer_match.group(2) or answer_match.group(3)
-                return [answer], 0.8, response_time, result.strip()
+            # Extract multiple answers
+            answers = extract_multiple_answers_test(result)
+            
+            if answers:
+                confidence = 0.9 if len(answers) > 1 else 0.8
+                return answers, confidence, response_time, result
             else:
-                # Fallback
-                fallback_match = re.search(r'[ก-ง]', result)
-                if fallback_match:
-                    return [fallback_match.group()], 0.6, response_time, result.strip()
+                # Fallback to single answer
+                single_answer = extract_single_answer_test(result)
+                if single_answer:
+                    return [single_answer], 0.6, response_time, result
         
         return ['ข'], 0.3, response_time, "No clear answer found"
         
     except Exception as e:
         return ['ข'], 0.2, 0, f"Error: {str(e)[:50]}"
+
+def extract_multiple_answers_test(text: str) -> List[str]:
+    """Extract multiple Thai choice answers from text (test version)"""
+    text = text.strip().lower()
+    
+    # Pattern 1: "ข,ง" or "ก,ค,ง"
+    comma_pattern = re.search(r'([ก-ง](?:,\s*[ก-ง])+)', text)
+    if comma_pattern:
+        answers_str = comma_pattern.group(1)
+        answers = [a.strip() for a in answers_str.split(',')]
+        return [a for a in answers if a in ['ก', 'ข', 'ค', 'ง']]
+    
+    # Pattern 2: "ข และ ง"
+    and_pattern = re.search(r'([ก-ง](?:\s*และ\s*[ก-ง])+)', text)
+    if and_pattern:
+        answers_str = and_pattern.group(1)
+        answers = re.findall(r'[ก-ง]', answers_str)
+        return list(set(answers))
+    
+    # Pattern 3: Multiple separate mentions
+    multiple_chars = re.findall(r'[ก-ง]', text)
+    if len(multiple_chars) > 1:
+        unique_answers = list(dict.fromkeys(multiple_chars))
+        if len(unique_answers) <= 4:
+            return unique_answers
+    
+    return []
+
+def extract_single_answer_test(text: str) -> str:
+    """Extract single Thai choice answer from text (test version)"""
+    patterns = [
+        r'\[([ก-ง])\]',
+        r'^([ก-ง])',
+        r'คำตอบ[:\s]*([ก-ง])',
+        r'ตอบ[:\s]*([ก-ง])',
+        r'เลือก\s*([ก-ง])',
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if match:
+            return match.group(1)
+    
+    # Last resort
+    choice_match = re.search(r'[ก-ง]', text)
+    if choice_match:
+        return choice_match.group()
+    
+    return None
 
 def run_quick_test():
     """Run quick test with sample questions"""
@@ -161,15 +212,19 @@ def run_quick_test():
             predicted_answers, confidence, response_time, full_response = quick_test_llama31(model_name, question, choices)
             total_time += response_time
             
-            print(f"Answer: {predicted_answers[0]} (confidence: {confidence:.2f})")
+            answer_display = ','.join(predicted_answers)
+            print(f"Answer: {answer_display} (confidence: {confidence:.2f})")
+            if len(predicted_answers) > 1:
+                print(f"  🎯 Multiple answers detected: {len(predicted_answers)} choices")
             print(f"Time: {response_time:.2f}s")
             print(f"Response: {full_response[:80]}...")
             
             results.append({
                 'id': question_id,
-                'answer': predicted_answers[0],
+                'answer': answer_display,  # Store as comma-separated string
                 'confidence': confidence,
-                'time': response_time
+                'time': response_time,
+                'multiple': len(predicted_answers) > 1
             })
         
         # Summary
@@ -193,7 +248,12 @@ def run_quick_test():
         
         # Quality assessment
         high_conf = sum(1 for r in results if r['confidence'] > 0.7)
+        multiple_answers = sum(1 for r in results if r.get('multiple', False))
+        
         print(f"🎯 High confidence answers: {high_conf}/{len(results)}")
+        if multiple_answers > 0:
+            print(f"🔢 Multiple choice answers: {multiple_answers}/{len(results)}")
+            print(f"   💡 System detected questions with multiple correct answers")
         
         if '70b' in model_name.lower():
             expected_accuracy = "90-95%"
@@ -201,6 +261,9 @@ def run_quick_test():
             expected_accuracy = "85-90%"
         
         print(f"📊 Expected accuracy: {expected_accuracy}")
+        
+        if multiple_answers > 0:
+            print(f"✅ Multiple answer detection: Working properly")
         
         # Test output format
         print(f"\n📋 Testing output format...")

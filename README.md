@@ -16,7 +16,8 @@
 
 3. **Get Results:**
    - Output: `ultra_fast_submission.csv`
-   - Format: `id,answer` (e.g., `1,"ง"`, `5,"ข,ง"`)
+   - Format: `id,answer` (e.g., `1,"ง"`, `5,"ข,ง"`, `10,"ก,ค,ง"`)
+   - ✅ **Supports multiple answers** for questions with multiple correct choices
 
 ## ⏱️ Performance
 
@@ -68,8 +69,11 @@ python setup_ultra_fast.py
 1. **Loads knowledge base** from 3 document files (one-time setup)
 2. **Processes each question** with smart context search
 3. **Queries Llama 3.1** with relevant context and multiple choice options
-4. **Extracts answers** using pattern matching
-5. **Saves results** in required submission format
+4. **Detects multiple answers** - handles questions with 1+ correct choices
+5. **Extracts answers** using advanced pattern matching:
+   - Single: `"ง"`
+   - Multiple: `"ข,ง"` or `"ก,ค,ง"`
+6. **Saves results** in required submission format
 
 ## 🔧 Troubleshooting
 
