@@ -5,7 +5,7 @@ Small, focused class that only deals with vectors.
 
 import faiss
 import numpy as np
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import logging
 
 from utils.logger import get_logger
@@ -20,6 +20,8 @@ class VectorStore:
         """Initialize vector store with specified dimension."""
         self.dimension = dimension
         self.index_type = index_type
+        self.texts = []  # Store original texts
+        self.metadata = []  # Store metadata
         
         # Create FAISS index
         if index_type.upper() == "L2":
@@ -31,8 +33,8 @@ class VectorStore:
         
         logger.info(f"Initialized vector store: {dimension}D, {index_type}")
     
-    def add_vectors(self, vectors: np.ndarray) -> bool:
-        """Add vectors to the index."""
+    def add_vectors(self, vectors: np.ndarray, texts: List[str] = None, metadata: List[Dict[str, Any]] = None) -> bool:
+        """Add vectors to the index with associated texts and metadata."""
         try:
             if len(vectors.shape) == 1:
                 vectors = vectors.reshape(1, -1)
@@ -41,6 +43,22 @@ class VectorStore:
                 raise ValueError(f"Vector dimension mismatch: expected {self.dimension}, got {vectors.shape[1]}")
             
             self.index.add(vectors.astype(np.float32))
+            
+            # Store texts and metadata
+            if texts:
+                if len(texts) != len(vectors):
+                    raise ValueError(f"Length of texts ({len(texts)}) does not match number of vectors ({len(vectors)})")
+                self.texts.extend(texts)
+            else:
+                self.texts.extend([""] * len(vectors))
+                
+            if metadata:
+                if len(metadata) != len(vectors):
+                    raise ValueError(f"Metadata length mismatch: expected {len(vectors)}, got {len(metadata)}")
+                self.metadata.extend(metadata)
+            else:
+                self.metadata.extend([{}] * len(vectors))
+            
             logger.debug(f"Added {len(vectors)} vectors to store")
             return True
             
@@ -60,6 +78,18 @@ class VectorStore:
         except Exception as e:
             logger.error(f"Vector search failed: {e}")
             return np.array([]), np.array([])
+    
+    def get_text(self, index: int) -> str:
+        """Get text by index."""
+        if 0 <= index < len(self.texts):
+            return self.texts[index]
+        return ""
+    
+    def get_metadata(self, index: int) -> Dict[str, Any]:
+        """Get metadata by index."""
+        if 0 <= index < len(self.metadata):
+            return self.metadata[index]
+        return {}
     
     def size(self) -> int:
         """Get number of vectors in store."""

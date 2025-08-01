@@ -41,7 +41,17 @@ def load_sample_data(search_engine: SearchEngine) -> int:
     
     texts = FileHandler.read_lines(data_file)
     if texts:
-        count = search_engine.add_texts_from_list(texts)
+        # Create metadata for each text
+        metadata_list = []
+        for i, text in enumerate(texts):
+            metadata_list.append({
+                "source": "sample_data.txt",
+                "index": i,
+                "length": len(text),
+                "loaded_at": str(Path(data_file).stat().st_mtime)
+            })
+        
+        count = search_engine.add_texts_from_list(texts, metadata_list)
         print(f"Loaded {count} sample texts")
         return count
     
@@ -72,7 +82,18 @@ def main():
                 "Good health comes from regular exercise and nutritious eating",
                 "Happiness is something that comes from having a peaceful mind"
             ]
-            count = search_engine.add_texts_from_list(sample_texts)
+            
+            # Create metadata for basic examples
+            sample_metadata = []
+            for i, text in enumerate(sample_texts):
+                sample_metadata.append({
+                    "source": "basic_examples",
+                    "index": i,
+                    "category": "general",
+                    "length": len(text)
+                })
+            
+            count = search_engine.add_texts_from_list(sample_texts, sample_metadata)
         
         print(f"System ready with {count} documents")
         

@@ -21,8 +21,6 @@ class SearchEngine:
         """Initialize search engine with vector store and text processor."""
         self.vector_store = vector_store
         self.text_processor = text_processor
-        self.texts = []  # Store original texts
-        self.metadata = []  # Store metadata
         
         logger.info("Initialized search engine")
     
@@ -35,12 +33,14 @@ class SearchEngine:
             # Generate embedding
             embedding = self.text_processor.encode_text(processed_text)
             
-            # Add to vector store
-            success = self.vector_store.add_vectors(embedding.reshape(1, -1))
+            # Add to vector store with text and metadata
+            success = self.vector_store.add_vectors(
+                embedding.reshape(1, -1), 
+                texts=[processed_text], 
+                metadata=[metadata or {}]
+            )
             
             if success:
-                self.texts.append(processed_text)
-                self.metadata.append(metadata or {})
                 logger.debug(f"Added text to search index: {text[:50]}...")
                 return True
             
@@ -50,12 +50,22 @@ class SearchEngine:
             logger.error(f"Failed to add text to search index: {e}")
             return False
     
-    def add_texts_from_list(self, texts: List[str]) -> int:
-        """Add multiple texts from list."""
+    def add_texts_from_list(self, texts: List[str], metadata_list: Optional[List[Dict[str, Any]]] = None) -> int:
+        """Add multiple texts from list with optional metadata."""
         count = 0
-        for text in texts:
-            if self.add_text(text):
+        
+        # Ensure metadata_list has the same length as texts
+        if metadata_list is None:
+            metadata_list = [{}] * len(texts)
+        elif len(metadata_list) != len(texts):
+            logger.warning("Length of metadata_list does not match length of texts")
+            raise ValueError("metadata_list must have the same length as texts")
+        
+        for i, text in enumerate(texts):
+            if self.add_text(text, metadata_list[i]):
                 count += 1
+        
+        logger.info(f"Added {count}/{len(texts)} texts to search index")
         return count
     
     def search(self, query: str, k: int = 5, min_relevance: float = 0.0) -> List[SearchResult]:
@@ -65,7 +75,7 @@ class SearchEngine:
                 logger.warning("Empty query provided")
                 return []
             
-            if len(self.texts) == 0:
+            if self.vector_store.size() == 0:
                 logger.warning("No texts in search index")
                 return []
             
@@ -78,7 +88,7 @@ class SearchEngine:
             # Process results
             results = []
             for i, (distance, idx) in enumerate(zip(distances, indices)):
-                if idx >= len(self.texts):
+                if idx >= self.vector_store.size():
                     continue
                 
                 # Convert distance to relevance score
@@ -86,10 +96,10 @@ class SearchEngine:
                 
                 if relevance_score >= min_relevance:
                     result = SearchResult(
-                        text=self.texts[idx],
+                        text=self.vector_store.get_text(idx),
                         distance=float(distance),
                         relevance_score=relevance_score,
-                        metadata=self.metadata[idx],
+                        metadata=self.vector_store.get_metadata(idx),
                         index=int(idx)
                     )
                     results.append(result)
@@ -103,12 +113,12 @@ class SearchEngine:
     
     def size(self) -> int:
         """Get number of texts in index."""
-        return len(self.texts)
+        return self.vector_store.size()
     
     def get_stats(self) -> Dict[str, Any]:
         """Get search engine statistics."""
         return {
-            "total_texts": len(self.texts),
+            "total_texts": self.vector_store.size(),
             "vector_dimension": self.text_processor.get_dimension(),
             "index_size": self.vector_store.size()
         }
