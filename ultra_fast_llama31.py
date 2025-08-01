@@ -28,9 +28,18 @@ except ImportError:
 
 # Enhanced logical validator (always available)
 from enhanced_logical_validator import ThaiHealthcareLogicalValidator
+from improved_healthcare_validator import ImprovedHealthcareValidator
+from mock_mcp_healthcare import MockMCPHealthcareSystem
+from multi_tool_mcp_client import MultiToolMCPClient
 
 LOGICAL_VALIDATOR = ThaiHealthcareLogicalValidator()
+HEALTHCARE_VALIDATOR = ImprovedHealthcareValidator()
+MOCK_MCP_SYSTEM = MockMCPHealthcareSystem()
+MULTI_TOOL_MCP = MultiToolMCPClient()
 print("✅ Enhanced Logical Validator loaded")
+print("✅ Improved Healthcare Validator loaded (reduces excessive 'ง' answers)")
+print("✅ Mock MCP Healthcare System loaded (patient/doctor focus)")
+print("✅ Multi-Tool MCP Client loaded (chains multiple requests for complex questions)")
 
 
 class UltraFastQA:
@@ -322,7 +331,36 @@ class UltraFastQA:
                         confidence, validation_result.confidence
                     )  # Use higher confidence
 
-                # MCP validation for remaining uncertain answers (if MCP available)
+                # Improved healthcare validation (reduce excessive 'ง' answers)
+                healthcare_result = HEALTHCARE_VALIDATOR.validate_healthcare_answer(
+                    question, choices, predicted_answers
+                )
+                if healthcare_result.corrections_made:
+                    print(
+                        f"    🏥 Healthcare Fix: {healthcare_result.original_answer} → {healthcare_result.validated_answer}"
+                    )
+                    print(f"    📝 Reason: {healthcare_result.reasoning[:60]}...")
+                    predicted_answers = healthcare_result.validated_answer
+                    confidence = max(confidence, healthcare_result.confidence)
+
+                # Multi-Tool MCP analysis for complex questions (always available)
+                if confidence < 0.8 or predicted_answers == ["ง"] or len(question) > 80:  # Complex/uncertain questions
+                    multi_tool_result = MULTI_TOOL_MCP.execute_multi_tool_query(
+                        question, choices, predicted_answers
+                    )
+                    
+                    # Use multi-tool result if significantly better
+                    if multi_tool_result.confidence > confidence + 0.1 or (predicted_answers == ["ง"] and multi_tool_result.final_answer != ["ง"]):
+                        print(f"    🔧 Multi-Tool Fix: {predicted_answers} → {multi_tool_result.final_answer}")
+                        print(f"    📊 Tools: {multi_tool_result.tool_calls_made}, Confidence: {multi_tool_result.confidence:.2f}")
+                        print(f"    🧠 Evidence: {len(multi_tool_result.evidence_sources)} sources")
+                        predicted_answers = multi_tool_result.final_answer
+                        confidence = multi_tool_result.confidence
+                    elif multi_tool_result.confidence > confidence:
+                        print(f"    ✅ Multi-Tool Boost: Confidence {confidence:.2f} → {multi_tool_result.confidence:.2f}")
+                        confidence = multi_tool_result.confidence
+
+                # Real MCP validation for remaining uncertain answers (if MCP available)
                 if MCP_AVAILABLE and (
                     confidence < 0.75 or self._has_contradiction(predicted_answers)
                 ):
