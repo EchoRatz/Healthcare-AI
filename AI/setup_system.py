@@ -41,13 +41,16 @@ def install_python_packages():
                 [sys.executable, "-m", "pip", "install", package],
                 capture_output=True,
                 text=True,
+                encoding='utf-8',
+                errors='replace',
                 check=True
             )
             print(f"   ✅ {package} installed successfully")
             
         except subprocess.CalledProcessError as e:
             print(f"   ❌ Failed to install {package}")
-            print(f"   Error: {e.stderr}")
+            if e.stderr:
+                print(f"   Error: {e.stderr}")
             return False
     
     return True
@@ -58,7 +61,13 @@ def check_ollama_installation():
     print("\n🤖 Checking Ollama installation...")
     
     try:
-        result = subprocess.run(["ollama", "--version"], capture_output=True, text=True)
+        result = subprocess.run(
+            ["ollama", "--version"], 
+            capture_output=True, 
+            text=True,
+            encoding='utf-8',
+            errors='replace'
+        )
         if result.returncode == 0:
             print(f"   ✅ Ollama found: {result.stdout.strip()}")
             return True
@@ -118,6 +127,8 @@ def install_ollama_models():
                 ["ollama", "pull", model],
                 capture_output=True,
                 text=True,
+                encoding='utf-8',
+                errors='replace',  # Replace problematic characters instead of failing
                 timeout=300  # 5 minutes timeout
             )
             
@@ -125,11 +136,13 @@ def install_ollama_models():
                 print(f"   ✅ {model} installed successfully")
             else:
                 print(f"   ❌ Failed to install {model}")
-                print(f"   Error: {result.stderr}")
+                if result.stderr:
+                    print(f"   Error: {result.stderr}")
                 return False
                 
         except subprocess.TimeoutExpired:
             print(f"   ⏰ Timeout installing {model} (this is normal for large models)")
+            print(f"   ✅ {model} installation likely continuing in background")
         except Exception as e:
             print(f"   ❌ Error installing {model}: {e}")
             return False
@@ -273,7 +286,11 @@ def main():
             if response in ['y', 'yes']:
                 print("\n🧪 Running quick test...")
                 try:
-                    subprocess.run([sys.executable, "quick_batch_test.py"])
+                    subprocess.run(
+                        [sys.executable, "quick_batch_test.py"],
+                        encoding='utf-8',
+                        errors='replace'
+                    )
                 except Exception as e:
                     print(f"❌ Test failed: {e}")
     

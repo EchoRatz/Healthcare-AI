@@ -11,7 +11,10 @@ from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
 import os
 import re
-from typing import List, Dict, Any
+import json
+import hashlib
+from datetime import datetime
+from typing import List, Dict, Any, Optional
 
 
 class ThaiHealthcareQA:
@@ -22,6 +25,11 @@ class ThaiHealthcareQA:
         self.db_location = "./thai_healthcare_db"
         self.vector_store = None
         self.retriever = None
+        
+        # Knowledge cache system
+        self.knowledge_cache_file = "./knowledge_cache.json"
+        self.knowledge_cache = self.load_knowledge_cache()
+        self.cache_enabled = True
         
         # Thai Q&A prompt template
         self.prompt_template = """
@@ -44,6 +52,39 @@ class ThaiHealthcareQA:
 ตอบเฉพาะตัวอักษรที่ถูกต้อง เช่น "ก" หรือ "ก, ค" หรือ "ข, ค, ง"
 
 หากไม่มีคำตอบที่ถูกต้องตามข้อมูล ให้ตอบ: "ไม่มีคำตอบที่ถูกต้อง"
+"""
+
+        # Information extraction template
+        self.extraction_template = """
+คุณเป็นผู้เชี่ยวชาญในการสกัดข้อมูลสำคัญจากคำถามและคำตอบเกี่ยวกับระบบสุขภาพไทย
+
+คำถาม: {question}
+คำตอบ: {answer}
+
+กรุณาสกัดข้อมูลสำคัญที่มีประโยชน์สำหรับการตอบคำถามในอนาคต:
+
+ประเภทข้อมูลที่ควรสกัด:
+1. ราคายา/บริการ (เช่น ยา X ราคา Y บาท)
+2. อัตราค่าบริการ (เช่น บริการ X เหมาจ่าย Y บาท/ครั้ง)
+3. สิทธิประโยชน์ (เช่น สิทธิ X ครอบคลุม Y)
+4. เงื่อนไขการรักษา (เช่น อายุขั้นต่ำ, เงื่อนไข)
+5. แผนกและบริการ (เช่น แผนก X เปิด Y เวลา)
+6. ระเบียบและกฎหมาย (เช่น กฎ X มีผล Y)
+
+รูปแบบผลลัพธ์ (ตอบเป็น JSON):
+{{
+  "facts": [
+    {{
+      "type": "ประเภทข้อมูล",
+      "key": "หัวข้อหลัก",
+      "value": "ข้อมูลสำคัญ",
+      "context": "บริบทเพิ่มเติม"
+    }}
+  ],
+  "relevance_score": 1-10
+}}
+
+หากไม่พบข้อมูลที่มีประโยชน์ ให้ตอบ: {{"facts": [], "relevance_score": 0}}
 """
 
         self.setup_vector_database()
@@ -124,9 +165,156 @@ class ThaiHealthcareQA:
             search_kwargs={"k": 5}
         )
 
+    def load_knowledge_cache(self) -> Dict[str, Any]:
+        """Load knowledge cache from file"""
+        try:
+            if os.path.exists(self.knowledge_cache_file):
+                with open(self.knowledge_cache_file, 'r', encoding='utf-8') as f:
+                    cache = json.load(f)
+                print(f"📚 Loaded {len(cache.get('facts', []))} cached facts")
+                return cache
+        except Exception as e:
+            print(f"⚠️  Error loading cache: {e}")
+        
+        return {"facts": [], "last_updated": None, "version": "1.0"}
+
+    def save_knowledge_cache(self):
+        """Save knowledge cache to file"""
+        try:
+            self.knowledge_cache["last_updated"] = datetime.now().isoformat()
+            with open(self.knowledge_cache_file, 'w', encoding='utf-8') as f:
+                json.dump(self.knowledge_cache, f, ensure_ascii=False, indent=2)
+            print(f"💾 Saved cache with {len(self.knowledge_cache['facts'])} facts")
+        except Exception as e:
+            print(f"❌ Error saving cache: {e}")
+
+    def extract_information(self, question: str, answer: str) -> Optional[Dict[str, Any]]:
+        """Extract key information from question-answer pair using AI"""
+        if not self.cache_enabled:
+            return None
+        
+        try:
+            prompt = ChatPromptTemplate.from_template(self.extraction_template)
+            chain = prompt | self.model
+            
+            result = chain.invoke({
+                "question": question,
+                "answer": answer
+            })
+            
+            # Try to parse JSON response
+            try:
+                # Clean up the response to extract JSON
+                json_start = result.find('{')
+                json_end = result.rfind('}') + 1
+                if json_start >= 0 and json_end > json_start:
+                    json_str = result[json_start:json_end]
+                    extracted_info = json.loads(json_str)
+                    
+                    # Add metadata
+                    if "facts" in extracted_info and extracted_info["facts"]:
+                        for fact in extracted_info["facts"]:
+                            fact["timestamp"] = datetime.now().isoformat()
+                            fact["source_question"] = question[:100] + "..." if len(question) > 100 else question
+                    
+                    return extracted_info
+                    
+            except json.JSONDecodeError:
+                print(f"⚠️  Could not parse extraction result as JSON: {result[:200]}...")
+                return None
+                
+        except Exception as e:
+            print(f"❌ Error extracting information: {e}")
+            return None
+
+    def add_to_cache(self, extracted_info: Dict[str, Any]):
+        """Add extracted information to knowledge cache"""
+        if not extracted_info or not extracted_info.get("facts"):
+            return
+        
+        relevance_score = extracted_info.get("relevance_score", 0)
+        
+        # Only cache information with decent relevance score
+        if relevance_score >= 5:
+            for fact in extracted_info["facts"]:
+                # Create a hash to avoid duplicates
+                fact_hash = hashlib.md5(
+                    f"{fact['type']}:{fact['key']}:{fact['value']}".encode()
+                ).hexdigest()[:8]
+                
+                fact["id"] = fact_hash
+                
+                # Check if already exists
+                existing_ids = {f.get("id") for f in self.knowledge_cache["facts"]}
+                if fact_hash not in existing_ids:
+                    self.knowledge_cache["facts"].append(fact)
+                    print(f"✅ Cached: {fact['type']} - {fact['key']}")
+
+    def search_cached_knowledge(self, query: str, top_k: int = 3) -> List[Dict[str, Any]]:
+        """Search cached knowledge for relevant facts"""
+        if not self.knowledge_cache["facts"]:
+            return []
+        
+        relevant_facts = []
+        query_lower = query.lower()
+        
+        for fact in self.knowledge_cache["facts"]:
+            # Simple relevance scoring based on keyword matching
+            score = 0
+            fact_text = f"{fact['key']} {fact['value']} {fact.get('context', '')}".lower()
+            
+            # Check for keyword matches
+            query_words = query_lower.split()
+            for word in query_words:
+                if len(word) > 2 and word in fact_text:
+                    score += 1
+            
+            if score > 0:
+                fact_copy = fact.copy()
+                fact_copy["search_score"] = score
+                relevant_facts.append(fact_copy)
+        
+        # Sort by relevance score and return top results
+        relevant_facts.sort(key=lambda x: x["search_score"], reverse=True)
+        return relevant_facts[:top_k]
+
     def parse_question(self, question_text: str) -> Dict[str, Any]:
         """Parse a Thai multiple choice question"""
-        lines = question_text.strip().split('\n')
+        # Handle both multi-line and single-line CSV formats
+        text = question_text.strip()
+        
+        # Check if this is a single-line CSV format (choices embedded in question)
+        if '\n' not in text and any(letter in text for letter in ['ก.', 'ข.', 'ค.', 'ง.']):
+            return self._parse_single_line_format(text)
+        else:
+            return self._parse_multi_line_format(text)
+    
+    def _parse_single_line_format(self, text: str) -> Dict[str, Any]:
+        """Parse single-line CSV format: question  ก. choice1 ข. choice2 ค. choice3 ง. choice4"""
+        choices = {}
+        
+        # Find all Thai choice patterns in the text
+        choice_pattern = r'([ก-ง])\.\s*(.+?)(?=\s+[ก-ง]\.|$)'
+        matches = re.findall(choice_pattern, text)
+        
+        for letter, choice_text in matches:
+            choices[letter] = choice_text.strip()
+        
+        # Extract question part (everything before the first choice)
+        first_choice_match = re.search(r'\s+([ก-ง])\.', text)
+        if first_choice_match:
+            question = text[:first_choice_match.start()].strip()
+        else:
+            question = text.strip()
+        
+        return {
+            "question": question,
+            "choices": choices
+        }
+    
+    def _parse_multi_line_format(self, text: str) -> Dict[str, Any]:
+        """Parse multi-line format where each choice is on a separate line"""
+        lines = text.split('\n')
         
         # Find the main question (usually the first few lines before choices)
         question_lines = []
@@ -164,8 +352,20 @@ class ThaiHealthcareQA:
                 formatted.append(f"{letter}. {choices[letter]}")
         return '\n'.join(formatted)
 
-    def answer_question(self, question_text: str) -> str:
-        """Answer a Thai multiple choice question"""
+    def answer_question(self, question_text: str, enable_caching: bool = True) -> str:
+        """Answer a Thai question (multiple choice or open-ended) with enhanced knowledge caching"""
+        try:
+            # Check if this is a multiple choice question or open-ended
+            if any(letter in question_text for letter in ['ก.', 'ข.', 'ค.', 'ง.']):
+                return self._answer_multiple_choice(question_text, enable_caching)
+            else:
+                return self._answer_open_ended(question_text, enable_caching)
+                
+        except Exception as e:
+            return f"เกิดข้อผิดพลาด: {str(e)}"
+
+    def _answer_multiple_choice(self, question_text: str, enable_caching: bool = True) -> str:
+        """Answer a multiple choice question"""
         try:
             # Parse the question
             parsed = self.parse_question(question_text)
@@ -175,23 +375,127 @@ class ThaiHealthcareQA:
             if not question or not choices:
                 return "ไม่สามารถแยกวิเคราะห์คำถามได้ กรุณาตรวจสอบรูปแบบคำถาม"
             
-            # Retrieve relevant context
+            # Retrieve relevant context from original documents
             context_docs = self.retriever.invoke(question)
-            context = "\n\n".join([doc.page_content for doc in context_docs])
+            document_context = "\n\n".join([doc.page_content for doc in context_docs])
+            
+            # Search cached knowledge for relevant facts
+            cached_facts = self.search_cached_knowledge(question)
+            cached_context = ""
+            if cached_facts:
+                cached_context = "\n\n=== ข้อมูลจากการเรียนรู้ก่อนหน้า ===\n"
+                for fact in cached_facts:
+                    cached_context += f"• {fact['type']}: {fact['key']} - {fact['value']}"
+                    if fact.get('context'):
+                        cached_context += f" ({fact['context']})"
+                    cached_context += "\n"
+                print(f"🧠 Using {len(cached_facts)} cached facts")
+            
+            # Combine contexts
+            full_context = document_context
+            if cached_context:
+                full_context += "\n" + cached_context
             
             # Format choices
             formatted_choices = self.format_choices_for_prompt(choices)
             
-            # Create prompt
-            prompt = ChatPromptTemplate.from_template(self.prompt_template)
+            # Create enhanced prompt
+            enhanced_prompt_template = self.prompt_template + """
+
+หมายเหตุ: ใช้ทั้งข้อมูลจากเอกสารหลักและข้อมูลที่เรียนรู้จากคำถามก่อนหน้าในการตอบ
+"""
+            
+            prompt = ChatPromptTemplate.from_template(enhanced_prompt_template)
             chain = prompt | self.model
             
             # Generate answer
             result = chain.invoke({
-                "context": context,
+                "context": full_context,
                 "question": question,
                 "choices": formatted_choices
             })
+            
+            # Extract and cache information from this Q&A pair
+            if enable_caching and self.cache_enabled:
+                try:
+                    extracted_info = self.extract_information(question, result)
+                    if extracted_info:
+                        self.add_to_cache(extracted_info)
+                        # Save cache periodically (every 5 new facts)
+                        if len(self.knowledge_cache["facts"]) % 5 == 0:
+                            self.save_knowledge_cache()
+                except Exception as e:
+                    print(f"⚠️  Cache extraction failed: {e}")
+            
+            return result
+            
+        except Exception as e:
+            return f"เกิดข้อผิดพลาด: {str(e)}"
+
+    def _answer_open_ended(self, question_text: str, enable_caching: bool = True) -> str:
+        """Answer an open-ended question using both documents and cached knowledge"""
+        try:
+            question = question_text.strip()
+            
+            # Retrieve relevant context from original documents
+            context_docs = self.retriever.invoke(question)
+            document_context = "\n\n".join([doc.page_content for doc in context_docs])
+            
+            # Search cached knowledge for relevant facts
+            cached_facts = self.search_cached_knowledge(question)
+            cached_context = ""
+            if cached_facts:
+                cached_context = "\n\n=== ข้อมูลจากการเรียนรู้ก่อนหน้า ===\n"
+                for fact in cached_facts:
+                    cached_context += f"• {fact['type']}: {fact['key']} - {fact['value']}"
+                    if fact.get('context'):
+                        cached_context += f" ({fact['context']})"
+                    cached_context += "\n"
+                print(f"🧠 Using {len(cached_facts)} cached facts for open-ended question")
+            
+            # Combine contexts
+            full_context = document_context
+            if cached_context:
+                full_context += "\n" + cached_context
+            
+            # Create open-ended prompt template
+            open_ended_template = """
+คุณเป็นผู้ช่วยที่เชี่ยวชาญในการตอบคำถามเกี่ยวกับระบบหลักประกันสุขภาพแห่งชาติของไทย
+
+ใช้ข้อมูลต่อไปนี้ในการตอบคำถาม:
+{context}
+
+คำถาม: {question}
+
+คำสั่ง:
+1. ตอบคำถามอย่างชัดเจนและครบถ้วน
+2. ใช้ข้อมูลจากเอกสารหลักและข้อมูลที่เรียนรู้มาก่อนหน้า
+3. ถ้าไม่มีข้อมูลเพียงพอ ให้บอกว่า "ไม่พบข้อมูลที่เกี่ยวข้องในฐานข้อมูล"
+4. ตอบเป็นภาษาไทยและให้ข้อมูลที่เป็นประโยชน์
+
+หมายเหตุ: ใช้ทั้งข้อมูลจากเอกสารหลักและข้อมูลที่เรียนรู้จากคำถามก่อนหน้าในการตอบ
+"""
+            
+            prompt = ChatPromptTemplate.from_template(open_ended_template)
+            chain = prompt | self.model
+            
+            # Generate answer
+            result = chain.invoke({
+                "context": full_context,
+                "question": question
+            })
+            
+            # Extract and cache information from this Q&A pair (if meaningful answer was generated)
+            if enable_caching and self.cache_enabled and "ไม่พบข้อมูล" not in result:
+                try:
+                    extracted_info = self.extract_information(question, result)
+                    if extracted_info:
+                        self.add_to_cache(extracted_info)
+                        # Save cache periodically (every 5 new facts)
+                        if len(self.knowledge_cache["facts"]) % 5 == 0:
+                            self.save_knowledge_cache()
+                except Exception as e:
+                    print(f"⚠️  Cache extraction failed: {e}")
             
             return result
             
@@ -312,6 +616,11 @@ class ThaiHealthcareQA:
             print(f"   - ประมวลผลสำเร็จ: {len([r for r in results if not r['answer'].startswith('ข้อผิดพลาด')])}")
             print(f"   - เกิดข้อผิดพลาด: {len([r for r in results if r['answer'].startswith('ข้อผิดพลาด')])}")
             
+            # Save final cache
+            if self.cache_enabled:
+                self.save_knowledge_cache()
+                print(f"💾 Final cache: {len(self.knowledge_cache['facts'])} facts saved")
+            
         except Exception as e:
             print(f"❌ เกิดข้อผิดพลาดในการอ่านไฟล์: {str(e)}")
     
@@ -404,6 +713,67 @@ class ThaiHealthcareQA:
             
         except Exception as e:
             print(f"❌ เกิดข้อผิดพลาดในการประมวลผล: {str(e)}")
+
+    def show_cache_stats(self):
+        """Display cache statistics"""
+        facts = self.knowledge_cache.get("facts", [])
+        print(f"\n📊 Knowledge Cache Statistics:")
+        print(f"   Total facts: {len(facts)}")
+        
+        if facts:
+            # Count by type
+            type_counts = {}
+            for fact in facts:
+                fact_type = fact.get("type", "Unknown")
+                type_counts[fact_type] = type_counts.get(fact_type, 0) + 1
+            
+            print(f"   Facts by type:")
+            for fact_type, count in sorted(type_counts.items()):
+                print(f"     - {fact_type}: {count}")
+            
+            last_updated = self.knowledge_cache.get("last_updated")
+            if last_updated:
+                print(f"   Last updated: {last_updated}")
+
+    def clear_cache(self):
+        """Clear the knowledge cache"""
+        self.knowledge_cache = {"facts": [], "last_updated": None, "version": "1.0"}
+        try:
+            if os.path.exists(self.knowledge_cache_file):
+                os.remove(self.knowledge_cache_file)
+            print("🗑️  Knowledge cache cleared")
+        except Exception as e:
+            print(f"❌ Error clearing cache: {e}")
+
+    def export_cache_to_text(self, filename: str = "knowledge_cache_export.txt"):
+        """Export cache to readable text file"""
+        try:
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write("# Thai Healthcare Knowledge Cache Export\n")
+                f.write(f"# Generated: {datetime.now().isoformat()}\n")
+                f.write(f"# Total facts: {len(self.knowledge_cache['facts'])}\n\n")
+                
+                # Group by type
+                facts_by_type = {}
+                for fact in self.knowledge_cache["facts"]:
+                    fact_type = fact.get("type", "Unknown")
+                    if fact_type not in facts_by_type:
+                        facts_by_type[fact_type] = []
+                    facts_by_type[fact_type].append(fact)
+                
+                for fact_type, facts in sorted(facts_by_type.items()):
+                    f.write(f"## {fact_type}\n\n")
+                    for fact in facts:
+                        f.write(f"**{fact['key']}**: {fact['value']}")
+                        if fact.get('context'):
+                            f.write(f" ({fact['context']})")
+                        f.write(f"\n  - Source: {fact.get('source_question', 'Unknown')}\n")
+                        f.write(f"  - Timestamp: {fact.get('timestamp', 'Unknown')}\n\n")
+                
+            print(f"📄 Cache exported to: {filename}")
+            
+        except Exception as e:
+            print(f"❌ Error exporting cache: {e}")
 
 
 def main():
