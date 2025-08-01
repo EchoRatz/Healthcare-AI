@@ -19,8 +19,6 @@ import requests
 import time
 import re
 import asyncio
-import hashlib
-import aiohttp
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
 from collections import defaultdict
@@ -54,41 +52,13 @@ class AnswerValidation:
 class ImprovedHealthcareQA:
     """Enhanced healthcare Q&A system with better accuracy and MCP integration"""
 
-    def __init__(self, max_workers: int = 5, batch_size: int = 10):
+    def __init__(self):
         self.model_name = None
         self.knowledge_base = {}
         self.healthcare_policies = self._load_healthcare_policies()
         self.question_patterns = self._load_question_patterns()
         self.mcp_client = None
         self.mcp_available = MCP_AVAILABLE
-        self.max_workers = max_workers
-        self.batch_size = batch_size
-        
-        # Performance optimizations
-        self.answer_cache = {}
-        self.context_cache = {}
-        self.analysis_cache = {}
-        self.session = None
-
-    async def initialize(self):
-        """Initialize the system with async session and MCP"""
-        # Create aiohttp session for better performance
-        self.session = aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=30),
-            connector=aiohttp.TCPConnector(limit=100, limit_per_host=20)
-        )
-        
-        # Initialize MCP if available
-        if self.mcp_available:
-            print("🔗 Initializing MCP integration...")
-            await self.initialize_mcp()
-        else:
-            print("⚠️  Running without MCP integration")
-
-    async def cleanup(self):
-        """Clean up resources"""
-        if self.session:
-            await self.session.close()
 
     async def initialize_mcp(self):
         """Initialize MCP client if available"""
@@ -323,15 +293,7 @@ class ImprovedHealthcareQA:
         return min(count / (length / 1000), 1.0)  # Normalize by text length
     
     def analyze_question(self, question_text: str) -> QuestionAnalysis:
-        """Analyze question to understand intent and requirements with caching"""
-        
-        # Create hash for caching
-        question_hash = hashlib.md5(question_text.encode()).hexdigest()[:8]
-        
-        # Check cache first
-        if question_hash in self.analysis_cache:
-            return self.analysis_cache[question_hash]
-        
+        """Analyze question to understand intent and requirements"""
         question_type = "factual"  # Default
         keywords = []
         entities = []
@@ -359,28 +321,16 @@ class ImprovedHealthcareQA:
         specific_terms = re.findall(r'[ก-ฮ]{2,}', question_text)
         entities.extend(specific_terms[:5])
         
-        analysis = QuestionAnalysis(
+        return QuestionAnalysis(
             question_type=question_type,
             keywords=keywords,
             entities=entities,
             context_needed=context_needed,
             confidence=min(confidence, 1.0)
         )
-        
-        # Cache the analysis
-        self.analysis_cache[question_hash] = analysis
-        return analysis
     
     def search_context(self, question_analysis: QuestionAnalysis, max_chars: int = 3000) -> str:
-        """Search for relevant context based on question analysis with caching"""
-        
-        # Create cache key
-        cache_key = f"{hashlib.md5(str(question_analysis.keywords).encode()).hexdigest()[:8]}_{max_chars}"
-        
-        # Check cache first
-        if cache_key in self.context_cache:
-            return self.context_cache[cache_key]
-        
+        """Search for relevant context based on question analysis"""
         relevant_sections = []
         
         # Search by keywords
@@ -413,97 +363,7 @@ class ImprovedHealthcareQA:
             if len(combined_context) + len(content) < max_chars:
                 combined_context += f"\n\n{content}"
         
-        # Cache the result
-        self.context_cache[cache_key] = combined_context
-        return combined_context
-        
         return combined_context.strip()
-    
-    async def process_question_batch(self, questions_batch: List[Dict]) -> List[Dict]:
-        """Process a batch of questions in parallel"""
-        tasks = []
-        
-        for row in questions_batch:
-            question_id = row['id']
-            question_text = row['question']
-            
-            # Parse question
-            question, choices = self.parse_question(question_text)
-            
-            # Analyze question
-            analysis = self.analyze_question(question)
-            
-            # Search for context
-            context = self.search_context(analysis)
-            
-            # Create task for async processing
-            task = self._process_single_question(question_id, question, choices, context, analysis)
-            tasks.append(task)
-        
-        # Execute all tasks in parallel
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        
-        # Filter out exceptions and return valid results
-        valid_results = []
-        for result in results:
-            if isinstance(result, dict):
-                valid_results.append(result)
-            else:
-                print(f"❌ Question processing error: {result}")
-        
-        return valid_results
-
-    async def _process_single_question(self, question_id: str, question: str, choices: Dict[str, str], 
-                                     context: str, analysis: QuestionAnalysis) -> Dict:
-        """Process a single question asynchronously with full validation"""
-        try:
-            # Get additional context from MCP if available
-            mcp_context = ""
-            if self.mcp_available and self.mcp_client and self.mcp_client.initialized:
-                mcp_context = await self.query_mcp_for_context(question, analysis)
-                if mcp_context:
-                    context += f"\n\nMCP Additional Context: {mcp_context}"
-
-            # Query LLM
-            answers, confidence = await self.query_llama31_enhanced(question, choices, context)
-
-            # Validate answer with local validation
-            validation = self.validate_answer_enhanced(question, choices, answers, context)
-
-            # Additional validation with MCP if available
-            if self.mcp_available and self.mcp_client and self.mcp_client.initialized:
-                mcp_validation = await self.validate_with_mcp(question, answers, choices)
-                if not mcp_validation["valid"]:
-                    validation.confidence *= 0.8  # Reduce confidence if MCP validation fails
-                    validation.reasoning += f" | MCP: {mcp_validation['reasoning']}"
-
-            # Apply corrections if needed
-            final_answers = answers
-            if not validation.is_valid and validation.suggested_corrections:
-                final_answers = validation.suggested_corrections
-
-            # Format answer
-            answer_str = ",".join(final_answers) if final_answers else "ง"
-
-            return {
-                'id': question_id,
-                'answer': answer_str,
-                'confidence': confidence,
-                'validation_passed': validation.is_valid,
-                'reasoning': validation.reasoning,
-                'mcp_used': self.mcp_available and self.mcp_client and self.mcp_client.initialized
-            }
-            
-        except Exception as e:
-            print(f"❌ Error processing question {question_id}: {e}")
-            return {
-                'id': question_id,
-                'answer': "ง",
-                'confidence': 0.0,
-                'validation_passed': False,
-                'reasoning': f"Error: {e}",
-                'mcp_used': False
-            }
     
     def parse_question(self, question_text: str) -> Tuple[str, Dict[str, str]]:
         """Parse question and extract choices"""
@@ -525,15 +385,8 @@ class ImprovedHealthcareQA:
         
         return question, choices
     
-    async def query_llama31_enhanced(self, question: str, choices: Dict[str, str], context: str) -> Tuple[List[str], float]:
-        """Enhanced async query to Llama 3.1 with caching and better prompting"""
-        
-        # Create cache key
-        cache_key = hashlib.md5(f"{question}_{str(choices)}_{context}".encode()).hexdigest()[:12]
-        
-        # Check cache first
-        if cache_key in self.answer_cache:
-            return self.answer_cache[cache_key]
+    def query_llama31_enhanced(self, question: str, choices: Dict[str, str], context: str) -> Tuple[List[str], float]:
+        """Enhanced query to Llama 3.1 with better prompting"""
         
         # Analyze question
         question_analysis = self.analyze_question(question)
@@ -542,7 +395,7 @@ class ImprovedHealthcareQA:
         prompt = self._build_enhanced_prompt(question, choices, context, question_analysis)
         
         try:
-            async with self.session.post(
+            response = requests.post(
                 "http://localhost:11434/api/generate",
                 json={
                     "model": self.model_name,
@@ -553,24 +406,23 @@ class ImprovedHealthcareQA:
                         "top_p": 0.9,
                         "top_k": 40
                     }
-                }
-            ) as response:
-                if response.status == 200:
-                    result = await response.json()
-                    answer_text = result.get("response", "").strip()
-                    
-                    # Extract answers with enhanced parsing
-                    answers = self._extract_answers_enhanced(answer_text, choices)
-                    confidence = self._calculate_answer_confidence(answer_text, question_analysis)
-                    
-                    result = (answers, confidence)
-                    # Cache the result
-                    self.answer_cache[cache_key] = result
-                    return result
-                else:
-                    print(f"❌ API Error: {response.status}")
-                    return [], 0.0
-                    
+                },
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                answer_text = result.get("response", "").strip()
+                
+                # Extract answers with enhanced parsing
+                answers = self._extract_answers_enhanced(answer_text, choices)
+                confidence = self._calculate_answer_confidence(answer_text, question_analysis)
+                
+                return answers, confidence
+            else:
+                print(f"❌ API Error: {response.status_code}")
+                return [], 0.0
+                
         except Exception as e:
             print(f"❌ Query Error: {e}")
             return [], 0.0
@@ -725,7 +577,7 @@ class ImprovedHealthcareQA:
         return overlap / total
 
     async def process_questions_enhanced(self, test_file: str) -> List[Dict]:
-        """Process questions with enhanced accuracy, MCP integration, and parallel processing"""
+        """Process questions with enhanced accuracy and MCP integration"""
 
         if not self.check_llama31():
             print("❌ Llama 3.1 not available")
@@ -733,8 +585,12 @@ class ImprovedHealthcareQA:
 
         print(f"✅ Using model: {self.model_name}")
 
-        # Initialize system
-        await self.initialize()
+        # Initialize MCP if available
+        if self.mcp_available:
+            print("🔗 Initializing MCP integration...")
+            await self.initialize_mcp()
+        else:
+            print("⚠️  Running without MCP integration")
 
         # Load knowledge base
         self.load_knowledge_base()
@@ -746,37 +602,72 @@ class ImprovedHealthcareQA:
             for row in reader:
                 questions.append(row)
 
-        print(f"🚀 Processing {len(questions)} questions with enhanced accuracy, MCP integration, and parallel processing...")
-        print(f"⚡ Using {self.max_workers} workers, batch size: {self.batch_size}")
+        print(f"🚀 Processing {len(questions)} questions with enhanced accuracy and MCP integration...")
 
+        results = []
         start_time = time.time()
-        all_results = []
 
-        # Process questions in batches
-        for i in range(0, len(questions), self.batch_size):
-            batch = questions[i:i + self.batch_size]
-            batch_start = time.time()
-            
-            print(f"📦 Processing batch {i//self.batch_size + 1}/{(len(questions) + self.batch_size - 1)//self.batch_size} ({len(batch)} questions)")
-            
-            # Process batch in parallel
-            batch_results = await self.process_question_batch(batch)
-            all_results.extend(batch_results)
-            
-            batch_time = time.time() - batch_start
-            print(f"  ⏱️  Batch completed in {batch_time:.1f}s ({len(batch)/batch_time:.1f} q/s)")
+        for i, row in enumerate(questions, 1):
+            question_id = row['id']
+            question_text = row['question']
+
+            # Parse question
+            question, choices = self.parse_question(question_text)
+
+            # Analyze question
+            analysis = self.analyze_question(question)
+
+            # Search for context
+            context = self.search_context(analysis)
+
+            # Get additional context from MCP if available
+            if self.mcp_available and self.mcp_client and self.mcp_client.initialized:
+                mcp_context = await self.query_mcp_for_context(question, analysis)
+                if mcp_context:
+                    context += f"\n\nMCP Additional Context: {mcp_context}"
+
+            # Query LLM
+            answers, confidence = self.query_llama31_enhanced(question, choices, context)
+
+            # Validate answer with local validation
+            validation = self.validate_answer_enhanced(question, choices, answers, context)
+
+            # Additional validation with MCP if available
+            if self.mcp_available and self.mcp_client and self.mcp_client.initialized:
+                mcp_validation = await self.validate_with_mcp(question, answers, choices)
+                if not mcp_validation["valid"]:
+                    validation.confidence *= 0.8  # Reduce confidence if MCP validation fails
+                    validation.reasoning += f" | MCP: {mcp_validation['reasoning']}"
+
+            # Apply corrections if needed
+            final_answers = answers
+            if not validation.is_valid and validation.suggested_corrections:
+                final_answers = validation.suggested_corrections
+
+            # Format answer
+            answer_str = ",".join(final_answers) if final_answers else "ง"
+
+            results.append({
+                'id': question_id,
+                'answer': answer_str,
+                'confidence': confidence,
+                'validation_passed': validation.is_valid,
+                'reasoning': validation.reasoning,
+                'mcp_used': self.mcp_available and self.mcp_client and self.mcp_client.initialized
+            })
+
+            # Progress update
+            if i % 25 == 0:
+                elapsed = time.time() - start_time
+                rate = i / elapsed
+                eta = (len(questions) - i) / rate if rate > 0 else 0
+                print(f"  📊 {i}/{len(questions)} ({i/len(questions)*100:.1f}%) | Rate: {rate:.1f} q/s | ETA: {eta/60:.1f}min")
 
         total_time = time.time() - start_time
-        
-        # Cleanup
-        await self.cleanup()
-        
-        print(f"🎉 Enhanced processing with MCP integration and parallel processing complete!")
+        print(f"🎉 Enhanced processing with MCP integration complete!")
         print(f"⏱️  Total time: {total_time/60:.1f} minutes")
-        print(f"📊 Average rate: {len(questions)/total_time:.1f} questions/second")
-        print(f"💾 Cache hits: {len(self.answer_cache)} answers cached")
 
-        return all_results
+        return results
     
     def save_results(self, results: List[Dict], output_file: str):
         """Save results to CSV"""
@@ -796,8 +687,7 @@ async def main():
     print("🏥 IMPROVED HEALTHCARE Q&A SYSTEM WITH MCP INTEGRATION")
     print("=" * 60)
 
-    # Create enhanced system with performance optimizations
-    qa_system = ImprovedHealthcareQA(max_workers=5, batch_size=10)
+    qa_system = ImprovedHealthcareQA()
 
     # Process questions
     test_file = "Healthcare-AI-Refactored/src/infrastructure/test.csv"

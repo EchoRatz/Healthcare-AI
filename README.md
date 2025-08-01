@@ -4,55 +4,30 @@
 
 ## 🚀 Quick Start
 
-### Option 1: Ultra-Fast Processing (Recommended)
-```bash
-# Test performance improvements
-python test_ultra_fast_performance.py
+1. **Test MCP Integration:**
+   ```bash
+   python test_mcp_integration_simple.py
+   ```
 
-# Run ultra-fast system
-python ultra_fast_healthcare_qa.py test.csv
-```
+2. **Start Processing:**
+   ```bash
+   python improved_healthcare_qa_system.py
+   ```
 
-### Option 2: Enhanced Accuracy Processing
-```bash
-# Test MCP Integration:
-python test_mcp_integration_simple.py
-
-# Start Processing:
-python improved_healthcare_qa_system.py test.csv
-```
-
-### Results:
-- **Ultra-fast**: `ultra_fast_submission.csv` (2-5 minutes)
-- **Enhanced**: `improved_healthcare_submission.csv` (5-12 minutes, now optimized)
-- Format: `id,answer` (e.g., `1,"ง"`, `5,"ข,ง"`, `10,"ก,ค,ง"`)
-
-### Features:
-- ✅ **Ultra-fast processing** with parallel execution and caching
-- 🧠 **Smart logical validation** - automatically fixes contradictory answers
-- 🔗 **MCP server integration** for additional context and validation
-- 📚 **Intelligent knowledge base indexing** for better context retrieval
+3. **Get Results:**
+   - Output: `improved_healthcare_submission.csv`
+   - Format: `id,answer` (e.g., `1,"ง"`, `5,"ข,ง"`, `10,"ก,ค,ง"`)
+   - ✅ **Enhanced accuracy** with better question analysis and validation
+   - 🧠 **Smart logical validation** - automatically fixes contradictory answers
+   - 🔗 **MCP server integration** for additional context and validation
+   - 📚 **Intelligent knowledge base indexing** for better context retrieval
 
 ## ⏱️ Performance
 
-### Ultra-Fast System (Recommended)
-| Model | Time | Accuracy | Quality | Features |
-|-------|------|----------|---------|----------|
-| Llama 3.1 8B | 2-4 min | ~85-90% | Good | ⚡ Parallel processing, caching |
-| Llama 3.1 70B | 3-6 min | ~90-95% | Excellent | ⚡ Parallel processing, caching |
-
-### Enhanced Accuracy System (Now with Performance Optimizations)
 | Model | Time | Accuracy | Quality | MCP Integration |
 |-------|------|----------|---------|-----------------|
-| Llama 3.1 8B | 5-8 min | ~90-95% | Excellent | ✅ Available |
-| Llama 3.1 70B | 8-12 min | ~95-98% | Outstanding | ✅ Available |
-
-### Performance Improvements
-- **6-15x faster** processing with ultra-fast system
-- **2-6x faster** processing with improved system (now optimized)
-- **Parallel execution** of multiple questions
-- **Intelligent caching** reduces redundant LLM calls
-- **Batch processing** optimizes resource usage
+| Llama 3.1 8B | 8-12 min | ~90-95% | Excellent | ✅ Available |
+| Llama 3.1 70B | 12-18 min | ~95-98% | Outstanding | ✅ Available |
 
 ## 🔗 MCP Server Integration
 
