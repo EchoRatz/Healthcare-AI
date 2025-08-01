@@ -378,12 +378,20 @@ class MultiToolMCPClient:
         
         else:
             # Low confidence - return best guess
-            best_choice = max(choice_scores.items(), key=lambda x: x[1])
-            return {
-                "answer": [best_choice[0]],
-                "confidence": 0.6,
-                "reasoning": f"Low confidence: best={best_choice[0]} score={best_choice[1]}"
-            }
+            if choice_scores:
+                best_choice = max(choice_scores.items(), key=lambda x: x[1])
+                return {
+                    "answer": [best_choice[0]],
+                    "confidence": 0.6,
+                    "reasoning": f"Low confidence: best={best_choice[0]} score={best_choice[1]}"
+                }
+            else:
+                # Fallback when no scores available
+                return {
+                    "answer": ["ง"],
+                    "confidence": 0.5,
+                    "reasoning": "No scoring data available - fallback to ง"
+                }
 
 def test_multi_tool_mcp():
     """Test the multi-tool MCP client"""

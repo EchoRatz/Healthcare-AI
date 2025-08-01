@@ -32,7 +32,9 @@ class MCPHealthcareClient:
         self.session = None
         self.initialized = False
         self.available_tools = []
-        self.session_id = None
+        # Generate session ID upfront for CMKL MCP server
+        import uuid
+        self.session_id = str(uuid.uuid4())
         
     async def __aenter__(self):
         """Async context manager entry"""
@@ -48,19 +50,22 @@ class MCPHealthcareClient:
         try:
             self.session = aiohttp.ClientSession()
             
-            # Initialize MCP session
+            # Initialize MCP session with proper protocol version
             init_request = {
                 "jsonrpc": "2.0",
                 "id": 1,
                 "method": "initialize",
+                "sessionId": self.session_id,  # Include session ID in init
                 "params": {
+                    "protocolVersion": "2025-06-18",
                     "clientInfo": {
                         "name": "healthcare-ai-client",
                         "version": "1.0.0"
                     },
                     "capabilities": {
-                        "tools": {"listChanged": True},
-                        "resources": {"listChanged": True, "subscribe": True}
+                        "tools": {},
+                        "resources": {},
+                        "prompts": {}
                     }
                 }
             }
@@ -68,6 +73,10 @@ class MCPHealthcareClient:
             response = await self._send_request(init_request)
             if response.success:
                 logger.info("MCP client initialized successfully")
+                # Extract session ID from server response if available
+                if response.data and "sessionId" in response.data:
+                    self.session_id = response.data["sessionId"]
+                
                 await self._discover_tools()
                 self.initialized = True
             else:
@@ -81,34 +90,79 @@ class MCPHealthcareClient:
         if self.session:
             await self.session.close()
     
+    async def call_tool(self, tool_name: str, arguments: Dict) -> MCPResponse:
+        """Call a tool on the MCP server"""
+        if not self.initialized:
+            return MCPResponse(success=False, error="MCP client not initialized")
+            
+        request = {
+            "jsonrpc": "2.0",
+            "id": f"tool-{tool_name}-{hash(str(arguments))}",
+            "method": "tools/call",
+            "params": {
+                "name": tool_name,
+                "arguments": arguments,
+                "sessionId": self.session_id  # Session ID in params
+            }
+        }
+            
+        return await self._send_request(request)
+    
     async def _send_request(self, request: Dict) -> MCPResponse:
         """Send JSON-RPC request to MCP server"""
         try:
             headers = {
                 "Content-Type": "application/json",
-                "Accept": "application/json"
+                "Accept": "application/json, text/event-stream"
             }
             
-            # Try different endpoints based on MCP server setup
-            endpoints = ["/message", "/mcp", "/api/mcp"]
+            # Try different endpoints based on MCP server setup  
+            endpoints = ["/mcp", "/message", "/api/mcp"]  # Start with /mcp first based on error logs
             
             for endpoint in endpoints:
                 url = f"{self.server_url}{endpoint}"
                 try:
                     async with self.session.post(url, json=request, headers=headers, timeout=10) as response:
                         if response.status == 200:
-                            data = await response.json()
-                            if "error" in data:
-                                return MCPResponse(success=False, error=data["error"]["message"])
-                            return MCPResponse(success=True, data=data.get("result"))
+                            content_type = response.headers.get('content-type', '')
+                            
+                            if 'text/event-stream' in content_type:
+                                # Handle Server-Sent Events (SSE) response
+                                text_data = await response.text()
+                                logger.debug(f"SSE response: {text_data[:200]}...")
+                                
+                                # Parse SSE format - look for JSON in data: lines
+                                lines = text_data.strip().split('\n')
+                                for line in lines:
+                                    if line.startswith('data: '):
+                                        try:
+                                            json_str = line[6:]  # Remove "data: " prefix
+                                            if json_str.strip():
+                                                data = json.loads(json_str)
+                                                if "error" in data:
+                                                    return MCPResponse(success=False, error=data["error"]["message"])
+                                                return MCPResponse(success=True, data=data.get("result"))
+                                        except json.JSONDecodeError:
+                                            continue
+                                            
+                                return MCPResponse(success=False, error="No valid JSON found in SSE stream")
+                            else:
+                                # Handle regular JSON response
+                                data = await response.json()
+                                if "error" in data:
+                                    return MCPResponse(success=False, error=data["error"]["message"])
+                                return MCPResponse(success=True, data=data.get("result"))
                         elif response.status == 404:
                             continue  # Try next endpoint
                         else:
                             error_text = await response.text()
+                            logger.debug(f"Endpoint {endpoint} failed: HTTP {response.status}: {error_text}")
                             return MCPResponse(success=False, error=f"HTTP {response.status}: {error_text}")
                 except asyncio.TimeoutError:
+                    logger.debug(f"Endpoint {endpoint} timed out")
                     continue
                 except Exception as e:
+                    logger.debug(f"Endpoint {endpoint} error: {e}")
                     continue
             
             return MCPResponse(success=False, error="No valid endpoint found")
@@ -121,7 +175,10 @@ class MCPHealthcareClient:
         request = {
             "jsonrpc": "2.0",
             "id": 2,
-            "method": "tools/list"
+            "method": "tools/list",
+            "params": {
+                "sessionId": self.session_id  # Try session ID in params
+            }
         }
         
         response = await self._send_request(request)
