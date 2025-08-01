@@ -27,7 +27,7 @@ try:
     CUDA_AVAILABLE = True
 except ImportError:
     CUDA_AVAILABLE = False
-    print("CUDA libraries not available. Install cupy and cudf for GPU acceleration.")
+    logger.warning("CUDA libraries not available. Install cupy and cudf for GPU acceleration.")
 
 try:
     import torch
@@ -116,19 +116,19 @@ class CUDACSVThread(threading.Thread):
         """Setup CUDA environment and check availability."""
         if self.use_cuda:
             if CUDA_AVAILABLE:
-                print("CUDA is available and enabled")
+                self.logger.info("CUDA is available and enabled")
                 # Get GPU info
                 try:
                     gpu_memory = cp.cuda.runtime.memGetInfo()
-                    print(f"GPU Memory: {gpu_memory[0] / 1024**3:.2f} GB free, "
+                    self.logger.info(f"GPU Memory: {gpu_memory[0] / 1024**3:.2f} GB free, "
                           f"{gpu_memory[1] / 1024**3:.2f} GB total")
                 except Exception as e:
-                    print(f"Could not get GPU memory info: {e}")
+                    self.logger.error(f"Could not get GPU memory info: {e}")
             else:
-                print("CUDA libraries not available, falling back to CPU")
+                self.logger.warning("CUDA libraries not available, falling back to CPU")
                 self.use_cuda = False
         else:
-            print("CUDA disabled, using CPU processing")
+            self.logger.info("CUDA disabled, using CPU processing")
     
     def _setup_directories(self):
         """Create necessary directories."""

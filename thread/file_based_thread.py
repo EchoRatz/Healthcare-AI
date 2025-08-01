@@ -130,7 +130,7 @@ class FileBasedThreadManager:
         self.paused = False
         
         # Setup logging first
-        self.logger = get_logger(f"{__name__}.{thread_id}")
+        self.logger = get_logger(f"ThreadLogger.{thread_id}")
         
         # File-based storage
         self._setup_directories()
