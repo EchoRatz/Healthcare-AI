@@ -1,0 +1,7 @@
+2025-08-01 16:07:54,309 - __main__ - INFO - Starting Healthcare-AI system
+2025-08-01 16:07:54,311 - __main__ - ERROR - System error: Can't instantiate abstract class FAISSVectorStore without an implementation for abstract methods 'add_vectors', 'delete_vector', 'load', 'save', 'search_vectors', 'size'
+2025-08-01 16:09:58,221 - __main__ - INFO - Starting Healthcare-AI system
+2025-08-01 16:09:58,225 - __main__ - ERROR - System error: Can't instantiate abstract class OllamaClient without an implementation for abstract methods 'get_token_count', 'set_parameters'
+2025-08-01 16:10:58,303 - __main__ - INFO - Starting Healthcare-AI system
+2025-08-01 16:11:13,315 - core.use_cases.ProcessQuestion - INFO - Processing question: fu...
+2025-08-01 16:11:13,316 - core.use_cases.ProcessQuestion - WARNING - No relevant documents found

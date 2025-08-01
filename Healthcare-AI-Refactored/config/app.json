@@ -1,0 +1,22 @@
+{
+  "database": {
+    "vector_dimension": 384,
+    "index_type": "L2",
+    "storage_path": "data/vectors"
+  },
+  "llm": {
+    "provider": "ollama",
+    "model_name": "llama2",
+    "base_url": "http://localhost:11434",
+    "temperature": 0.7,
+    "max_tokens": 1000
+  },
+  "processing": {
+    "csv_input_dir": "data/csv_input",
+    "csv_processed_dir": "data/csv_processed",
+    "csv_error_dir": "data/csv_errors",
+    "polling_interval": 1.0,
+    "batch_size": 100
+  },
+  "log_level": "INFO"
+}
