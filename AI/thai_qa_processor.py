@@ -323,58 +323,58 @@ class ThaiHealthcareQA:
     def extract_choice_only(self, ai_response: str) -> str:
         """Extract only the choice letters from AI response"""
         import re
-        
+
         # Clean the response
         response = ai_response.strip()
-        
+
         # Check for common "no answer" phrases FIRST (before extracting letters)
         no_answer_phrases = [
-            'ไม่มีคำตอบที่ถูกต้อง',
-            'ไม่มีข้อใดถูกต้อง', 
-            'ไม่มีตัวเลือกที่ถูกต้อง',
-            'ไม่พบข้อมูล',
-            'ไม่มีข้อมูล',
-            'ข้อมูลไม่เพียงพอ',
-            'ไม่สามารถ',
-            'ขออภัย'
+            "ไม่มีคำตอบที่ถูกต้อง",
+            "ไม่มีข้อใดถูกต้อง",
+            "ไม่มีตัวเลือกที่ถูกต้อง",
+            "ไม่พบข้อมูล",
+            "ไม่มีข้อมูล",
+            "ข้อมูลไม่เพียงพอ",
+            "ไม่สามารถ",
+            "ขออภัย",
         ]
-        
+
         response_lower = response.lower()
         for phrase in no_answer_phrases:
             if phrase.lower() in response_lower:
                 return "ไม่มีคำตอบที่ถูกต้อง"
-        
+
         # Look for Thai choice letters at the end of response or in quotes
         choice_patterns = [
-            r'ตอบ[:\s]*([ก-ง](?:\s*,\s*[ก-ง])*)',  # ตอบ: ก, ข
-            r'คำตอบ[:\s]*([ก-ง](?:\s*,\s*[ก-ง])*)',  # คำตอบ: ก
+            r"ตอบ[:\s]*([ก-ง](?:\s*,\s*[ก-ง])*)",  # ตอบ: ก, ข
+            r"คำตอบ[:\s]*([ก-ง](?:\s*,\s*[ก-ง])*)",  # คำตอบ: ก
             r'"([ก-ง](?:\s*,\s*[ก-ง])*)"',  # "ก, ข"
-            r'([ก-ง](?:\s*,\s*[ก-ง])*)\s*$',  # ก, ข at end
-            r'ให้ตอบ[:\s]*([ก-ง](?:\s*,\s*[ก-ง])*)',  # ให้ตอบ: ก
+            r"([ก-ง](?:\s*,\s*[ก-ง])*)\s*$",  # ก, ข at end
+            r"ให้ตอบ[:\s]*([ก-ง](?:\s*,\s*[ก-ง])*)",  # ให้ตอบ: ก
         ]
-        
+
         # Try each pattern
         for pattern in choice_patterns:
             matches = re.findall(pattern, response)
             if matches:
                 choice = matches[-1].strip()  # Get last match
                 # Clean up spacing around commas
-                choice = re.sub(r'\s*,\s*', ', ', choice)
+                choice = re.sub(r"\s*,\s*", ", ", choice)
                 return choice
-        
+
         # Look for individual Thai letters scattered in text (only if no "no answer" phrases)
-        thai_letters = re.findall(r'[ก-ง]', response)
+        thai_letters = re.findall(r"[ก-ง]", response)
         if thai_letters:
             # Remove duplicates while preserving order
             unique_letters = []
             for letter in thai_letters:
                 if letter not in unique_letters:
                     unique_letters.append(letter)
-            
+
             # If we found reasonable number of letters (1-4), return them
             if 1 <= len(unique_letters) <= 4:
-                return ', '.join(unique_letters)
-        
+                return ", ".join(unique_letters)
+
         # If all else fails, return the original response (but truncated)
         return response[:50] + "..." if len(response) > 50 else response
 
@@ -512,15 +512,17 @@ class ThaiHealthcareQA:
             chain = prompt | self.model
 
             # Generate answer
-            result = chain.invoke({
-                "context": full_context,
-                "question": question,
-                "choices": formatted_choices
-            })
-            
+            result = chain.invoke(
+                {
+                    "context": full_context,
+                    "question": question,
+                    "choices": formatted_choices,
+                }
+            )
+
             # Extract only the choice letters from the response
             clean_answer = self.extract_choice_only(result)
-            
+
             # Extract and cache information from this Q&A pair (use original result for better context)
             if enable_caching and self.cache_enabled:
                 try:
@@ -532,9 +534,9 @@ class ThaiHealthcareQA:
                             self.save_knowledge_cache()
                 except Exception as e:
                     print(f"⚠️  Cache extraction failed: {e}")
-            
+
             return clean_answer
-            
+
         except Exception as e:
             return f"เกิดข้อผิดพลาด: {str(e)}"
 
@@ -592,14 +594,11 @@ class ThaiHealthcareQA:
             chain = prompt | self.model
 
             # Generate answer
-            result = chain.invoke({
-                "context": full_context,
-                "question": question
-            })
-            
+            result = chain.invoke({"context": full_context, "question": question})
+
             # For open-ended questions, try to extract clean answer too
             clean_answer = self.extract_choice_only(result)
-            
+
             # Extract and cache information from this Q&A pair (if meaningful answer was generated)
             if enable_caching and self.cache_enabled and "ไม่พบข้อมูล" not in result:
                 try:
@@ -611,9 +610,9 @@ class ThaiHealthcareQA:
                             self.save_knowledge_cache()
                 except Exception as e:
                     print(f"⚠️  Cache extraction failed: {e}")
-            
+
             return clean_answer
-            
+
         except Exception as e:
             return f"เกิดข้อผิดพลาด: {str(e)}"
 
@@ -680,8 +679,6 @@ class ThaiHealthcareQA:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_file_path = f"thai_qa_answers_{timestamp}.csv"
 
-        results = []
-
         try:
             # Read CSV file
             with open(csv_file_path, "r", encoding="utf-8") as file:
@@ -689,45 +686,61 @@ class ThaiHealthcareQA:
                 questions = list(reader)
 
             total_questions = len(questions)
+            total_batches = (total_questions + batch_size - 1) // batch_size
+
             print(f"📝 พบคำถามทั้งหมด: {total_questions} ข้อ")
             print("=" * 60)
 
-            # Process each question
-            for i, row in enumerate(questions, 1):
-                question_id = row["id"]
-                question_text = row["question"]
+            all_results = []
 
-                print(f"⏳ กำลังประมวลผลคำถาม {i}/{total_questions} (ID: {question_id})")
+            for batch_num in range(total_batches):
+                start_idx = batch_num * batch_size
+                end_idx = min(start_idx + batch_size, total_questions)
+                batch_questions = questions[start_idx:end_idx]
 
-                try:
-                    # Get answer from AI
-                    answer = self.answer_question(question_text)
+                print(
+                    f"🔄 กำลังประมวลผล Batch {batch_num + 1}/{total_batches} (คำถาม {start_idx + 1}-{end_idx})"
+                )
 
-                    # Clean up answer (remove extra whitespace, newlines)
-                    clean_answer = " ".join(answer.split())
+                batch_results = []
 
-                    results.append(
-                        {
-                            "id": question_id,
-                            "question": question_text,
-                            "answer": clean_answer,
-                        }
+                # Process each question
+                for i, row in enumerate(questions, 1):
+                    question_id = row["id"]
+                    question_text = row["question"]
+
+                    print(
+                        f"⏳ กำลังประมวลผลคำถาม {i}/{total_questions} (ID: {question_id})"
                     )
 
-                    print(f"✅ คำตอบ: {clean_answer}")
+                    try:
+                        # Get answer from AI
+                        answer = self.answer_question(question_text)
 
-                except Exception as e:
-                    error_msg = f"ข้อผิดพลาด: {str(e)}"
-                    results.append(
-                        {
-                            "id": question_id,
-                            "question": question_text,
-                            "answer": error_msg,
-                        }
-                    )
-                    print(f"❌ {error_msg}")
+                        # Clean up answer (remove extra whitespace, newlines)
+                        clean_answer = " ".join(answer.split())
+                        if clean_format:
+                            batch_results.append(
+                                {
+                                    "id": question_id,
+                                    "answer": clean_answer,
+                                }
+                            )
+                        else:
+                            batch_results.append(
+                                {
+                                    "id": question_id,
+                                    "question": question_text,
+                                    "answer": clean_answer,
+                                }
+                            )
+                        print(f"✅ คำตอบ: {clean_answer}")
 
-                print("-" * 40)
+                    except Exception as e:
+                        error_msg = f"ข้อผิดพลาด: {str(e)}"
+                        print(f"❌ {error_msg}")
+
+            all_results.extend(batch_results)
 
             # Save results to CSV
             with open(output_file_path, "w", encoding="utf-8", newline="") as file:
@@ -748,12 +761,6 @@ class ThaiHealthcareQA:
             print(f"🎉 เสร็จสิ้น! บันทึกผลลัพธ์ที่: {output_file_path}")
             print(f"📊 สถิติ:")
             print(f"   - คำถามทั้งหมด: {total_questions}")
-            print(
-                f"   - ประมวลผลสำเร็จ: {len([r for r in results if not r['answer'].startswith('ข้อผิดพลาด')])}"
-            )
-            print(
-                f"   - เกิดข้อผิดพลาด: {len([r for r in results if r['answer'].startswith('ข้อผิดพลาด')])}"
-            )
 
             # Save final cache
             if self.cache_enabled:
