@@ -49,36 +49,57 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
                     self.logger.warning(f"Skipping request without endpoint: {req}")
                     continue
                 
-                # MCP JSON-RPC call
+                # MCP server expects this format based on Postman testing
                 payload = {
-                    "jsonrpc": "2.0",
-                    "id": f"req_{datetime.now().timestamp()}",
                     "method": endpoint,
-                    "params": params
+                    "params": {
+                        "name": params.get("name", endpoint),
+                        "arguments": params.get("arguments", {})
+                    }
                 }
                 
                 self.logger.debug(f"Sending MCP request to {endpoint}: {params}")
                 
-                response = self.session.post(
-                    f"{self.server_url}/api/jsonrpc",
-                    json=payload,
-                    timeout=30
-                )
+                # Try different endpoints
+                endpoints = ["/api/jsonrpc", "/jsonrpc", "/api", "/"]
+                response = None
                 
-                if response.status_code == 200:
-                    result = response.json()
-                    
-                    if 'error' in result:
-                        self.logger.error(f"MCP error for {endpoint}: {result['error']}")
-                        results[endpoint] = {
-                            'error': result['error'],
-                            'data': None
-                        }
-                    else:
-                        results[endpoint] = {
-                            'data': result.get('result'),
-                            'error': None
-                        }
+                for ep in endpoints:
+                    try:
+                        response = self.session.post(
+                            f"{self.server_url}{ep}",
+                            json=payload,
+                            timeout=30
+                        )
+                        if response.status_code == 200:
+                            break
+                    except Exception as e:
+                        self.logger.debug(f"Failed to connect to {ep}: {e}")
+                        continue
+                
+                if not response:
+                    self.logger.error(f"Failed to connect to any MCP endpoint")
+                    results[endpoint] = {
+                        'error': 'Connection failed',
+                        'data': None
+                    }
+                    continue
+                
+                                 if response.status_code == 200:
+                     result = response.json()
+                     
+                     if 'error' in result:
+                         self.logger.error(f"MCP error for {endpoint}: {result['error']}")
+                         results[endpoint] = {
+                             'error': result['error'],
+                             'data': None
+                         }
+                     else:
+                         # The MCP server returns data directly, not wrapped in 'result'
+                         results[endpoint] = {
+                             'data': result,
+                             'error': None
+                         }
                 else:
                     self.logger.error(f"MCP HTTP error {response.status_code}: {response.text}")
                     results[endpoint] = {
@@ -95,21 +116,53 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
     def is_available(self) -> bool:
         """Check if MCP server is available."""
         try:
-            # Try to get server info
-            payload = {
-                "jsonrpc": "2.0",
-                "id": "health_check",
-                "method": "serverInfo",
-                "params": {}
-            }
+            # Try different possible endpoints
+            endpoints = [
+                "/api/jsonrpc",
+                "/jsonrpc",
+                "/api",
+                "/",
+                "/health",
+                "/status"
+            ]
             
-            response = self.session.post(
-                f"{self.server_url}/api/jsonrpc",
-                json=payload,
-                timeout=5
-            )
+            for endpoint in endpoints:
+                try:
+                    # Try a simple GET request first
+                    response = self.session.get(
+                        f"{self.server_url}{endpoint}",
+                        timeout=5
+                    )
+                    
+                    if response.status_code == 200:
+                        self.logger.info(f"MCP server available at {endpoint}")
+                        return True
+                    
+                                         # Try MCP server format
+                     payload = {
+                         "method": "tools/list",
+                         "params": {
+                             "name": "list_all_departments",
+                             "arguments": {}
+                         }
+                     }
+                    
+                    response = self.session.post(
+                        f"{self.server_url}{endpoint}",
+                        json=payload,
+                        timeout=5
+                    )
+                    
+                    if response.status_code == 200:
+                        self.logger.info(f"MCP server available at {endpoint}")
+                        return True
+                        
+                except Exception as e:
+                    self.logger.debug(f"MCP endpoint {endpoint} failed: {e}")
+                    continue
             
-            return response.status_code == 200
+            self.logger.warning(f"MCP server not available at any endpoint")
+            return False
             
         except Exception as e:
             self.logger.debug(f"MCP server not available: {e}")
@@ -128,22 +181,37 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
         """List available MCP resources."""
         try:
             payload = {
-                "jsonrpc": "2.0",
-                "id": "list_resources",
-                "method": "resources.list",
-                "params": {}
+                "method": "tools/list",
+                "params": {
+                    "name": "list_all_departments",
+                    "arguments": {}
+                }
             }
             
-            response = self.session.post(
-                f"{self.server_url}/api/jsonrpc",
-                json=payload,
-                timeout=10
-            )
+            # Try different endpoints
+            endpoints = ["", "/api", "/tools"]
+            response = None
             
-            if response.status_code == 200:
+            for ep in endpoints:
+                try:
+                    response = self.session.post(
+                        f"{self.server_url}{ep}",
+                        json=payload,
+                        timeout=10
+                    )
+                    if response.status_code == 200:
+                        break
+                except Exception as e:
+                    self.logger.debug(f"Failed to connect to {ep}: {e}")
+                    continue
+            
+            if response and response.status_code == 200:
                 result = response.json()
-                if 'result' in result:
-                    return [resource['name'] for resource in result['result']]
+                # Extract department names from the response
+                if isinstance(result, list):
+                    return [dept.get('name', '') for dept in result if dept.get('name')]
+                elif isinstance(result, dict) and 'departments' in result:
+                    return [dept.get('name', '') for dept in result['departments'] if dept.get('name')]
             
             return []
             

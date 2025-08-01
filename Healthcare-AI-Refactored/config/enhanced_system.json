@@ -1,8 +1,8 @@
 {
-  "llm": {
-    "provider": "ollama",
-    "model_name": "llama3:70b",
-    "base_url": "http://localhost:11434",
+      "llm": {
+      "provider": "ollama",
+      "model_name": "llama3.1:70b",
+      "base_url": "http://localhost:11434",
     "temperature": 0.7,
     "max_tokens": 2000,
     "quantization": "q8_0",
