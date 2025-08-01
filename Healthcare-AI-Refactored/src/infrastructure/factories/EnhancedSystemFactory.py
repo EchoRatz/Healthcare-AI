@@ -149,10 +149,11 @@ class EnhancedSystemFactory(LoggerMixin):
                 return None
             
             connector = TextConnector(
-                base_path=text_config.get('base_path', 'data/documents')
+                base_path=text_config.get('base_path', 'data/documents'),
+                text_folders=text_config.get('text_folders', [])
             )
             
-            self.logger.info(f"Created text connector with base path: {text_config.get('base_path')}")
+            self.logger.info(f"Created text connector with base path: {text_config.get('base_path')} and folders: {text_config.get('text_folders', [])}")
             return connector
             
         except Exception as e:

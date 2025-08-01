@@ -1,7 +1,7 @@
 {
   "llm": {
     "provider": "ollama",
-    "model_name": "llama2:70b",
+    "model_name": "llama3:70b",
     "base_url": "http://localhost:11434",
     "temperature": 0.7,
     "max_tokens": 2000,
@@ -16,7 +16,7 @@
   "connectors": {
     "mcp": {
       "enabled": true,
-      "server_url": "http://localhost:3000",
+      "server_url": "https://mcp-hackathon.cmkl.ai/mcp",
       "auth_token": null,
       "timeout": 30
     },
@@ -28,9 +28,10 @@
     },
     "text": {
       "enabled": true,
-      "base_path": "data/documents",
+      "base_path": "src/infrastructure",
       "supported_extensions": [".txt", ".md", ".csv", ".json", ".yaml", ".yml"],
-      "max_file_size_mb": 10
+      "max_file_size_mb": 10,
+      "text_folders": ["results_doc", "results_doc2", "results_doc3"]
     }
   },
   "processing": {
@@ -56,5 +57,10 @@
     "system_memory_gb": 64,
     "enable_quantization": true,
     "preferred_precision": "q8_0"
+  },
+  "data": {
+    "input_file": "src/infrastructure/test.csv",
+    "output_file": "test_sample_output.csv",
+    "expected_format": "id,answer"
   }
 } 
