@@ -14,6 +14,11 @@ class Config:
     DEFAULT_INDEX_FILE = "thai_vector_index.faiss"
     DEFAULT_METADATA_FILE = "thai_metadata.json"
 
+    # Redis Config
+    REDIS_HOST = "localhost"
+    REDIS_PORT = 6379
+    REDIS_DB = 0
+
     # Vector Database Settings
     VECTOR_DIMENSION = 384  # For paraphrase-multilingual-MiniLM-L12-v2
     SENTENCE_TRANSFORMER_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"

@@ -18,3 +18,4 @@ Pillow>=11.0.0
 langChain
 langChain-ollama
 langChain-chroma
+redis
