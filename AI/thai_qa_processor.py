@@ -544,8 +544,14 @@ class ThaiHealthcareQA:
             print(answer)
             print("="*60)
     
-    def process_csv_questions(self, csv_file_path: str, output_file_path: str = None) -> None:
-        """Process all questions from CSV file and save answers"""
+    def process_csv_questions(self, csv_file_path: str, output_file_path: str = None, clean_format: bool = False) -> None:
+        """Process all questions from CSV file and save answers
+        
+        Args:
+            csv_file_path: Path to input CSV file
+            output_file_path: Path to output CSV file (optional)
+            clean_format: If True, output only id,answer columns (default: id,question,answer)
+        """
         import csv
         import os
         from datetime import datetime
@@ -604,10 +610,18 @@ class ThaiHealthcareQA:
             
             # Save results to CSV
             with open(output_file_path, 'w', encoding='utf-8', newline='') as file:
-                fieldnames = ['id', 'question', 'answer']
+                if clean_format:
+                    # Clean format: only id and answer columns
+                    fieldnames = ['id', 'answer']
+                    clean_results = [{'id': r['id'], 'answer': r['answer']} for r in results]
+                else:
+                    # Standard format: id, question, and answer columns
+                    fieldnames = ['id', 'question', 'answer']
+                    clean_results = results
+                
                 writer = csv.DictWriter(file, fieldnames=fieldnames)
                 writer.writeheader()
-                writer.writerows(results)
+                writer.writerows(clean_results)
             
             print("=" * 60)
             print(f"🎉 เสร็จสิ้น! บันทึกผลลัพธ์ที่: {output_file_path}")
