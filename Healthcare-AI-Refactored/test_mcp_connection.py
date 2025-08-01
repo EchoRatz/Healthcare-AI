@@ -34,7 +34,7 @@ def test_mcp_connection():
             
             # Test a specific call
             test_request = [{
-                'endpoint': 'tools/call',
+                'endpoint': 'list_all_departments',
                 'params': {
                     'name': 'list_all_departments',
                     'arguments': {}

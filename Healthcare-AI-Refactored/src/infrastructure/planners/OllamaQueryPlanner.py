@@ -58,6 +58,59 @@ class OllamaQueryPlanner(QueryPlannerInterface, LoggerMixin):
         """Build the planning prompt for chain-of-thought reasoning."""
         return """You are a query planner for an AI system that can access multiple data sources:
 1. MCP (Model Context Protocol) server - for structured data and APIs
+   Available MCP tools:
+   
+   Patient Management:
+   - lookup_patient: Look up patient information by patient ID
+   - search_patients: Search patients by name, phone, or email
+   - create_patient: Create a new patient record
+   - emergency_patient_lookup: Emergency lookup - search by any identifier
+   - get_medical_history: Get complete medical history for a patient
+   - add_vital_signs: Add vital signs for a patient
+   - add_medication: Add medication to patient's record
+   - add_allergy: Add allergy to patient's record
+   - check_food_allergies: Check if patient has allergies to specific food items
+   - check_drug_allergies: Check if patient has allergies to specific medications
+   - get_allergy_alternatives: Get alternative foods or medications for allergic patients
+   
+   Appointment Management:
+   - get_appointments: Get patient appointments
+   - schedule_appointment: Schedule a new appointment
+   - book_appointment_with_availability_check: Book appointment with automatic availability checking
+   - book_appointment_with_doctor_recommendation: Book appointment with automatic doctor recommendation
+   - find_next_available_appointment: Find the next available appointment slot for a doctor
+   - cancel_appointment: Cancel an appointment and free up the doctor's time slot
+   
+   Doctor & Staff Management:
+   - get_doctor_info: Get detailed information about a doctor
+   - search_doctors: Search doctors
+   - get_doctor_schedule: Get doctor's schedule for a specific date or week
+   - check_doctor_availability: Check if doctor is available at specific date and time
+   - find_available_doctors: Find available doctors by specialty on a specific date
+   - get_staff_info: Get staff member information
+   - list_staff_by_department: List all staff members in a department
+   
+   Department Management:
+   - list_all_departments: List all hospital departments
+   - get_department_info: Get department information
+   - get_department_staff: Get all staff members in a department
+   - get_department_services: Get services offered by a department
+   
+   Room Management:
+   - get_room_info: Get detailed room information
+   - find_available_rooms: Find available rooms
+   - get_room_equipment: Get equipment available in a room
+   - update_room_status: Update room status (available, occupied, maintenance, cleaning)
+   
+   Queue Management:
+   - book_queue: Book a queue number for a patient in a specific department
+   - check_queue_status: Check the status of a queue number
+   - get_department_queue_status: Get current queue status for a department
+   
+   Lab Management:
+   - get_lab_results: Get lab results for a patient
+   - add_lab_result: Add lab result for a patient (results should be JSON string)
+   
 2. PDF files - for documents and manuals
 3. Text files - for notes, configurations, and other text data
 
@@ -74,16 +127,20 @@ Create a plan in YAML format with the following structure:
 
 plan:
   mcp:
-    - endpoint: "endpoint_name"
+    - endpoint: "tool_name"
       params:
-        key1: value1
-        key2: value2
+        name: "tool_name"
+        arguments: {{}}
+        query: "original query for context"
   pdf:
     - file: "filename.pdf"
       pages: [1, 2, 3]  # specific pages, or omit for all pages
   text:
     - file: "filename.txt"
       line_range: [10, 50]  # optional line range, or omit for entire file
+
+For MCP requests, use the most appropriate tool name from the available tools list.
+Include the original query in the params for context.
 
 Only include sources that are likely to be relevant. If no specific sources are needed, return an empty plan.
 
@@ -126,9 +183,16 @@ Return only the YAML plan, no additional text."""
         if isinstance(mcp_requests, list):
             for req in mcp_requests:
                 if isinstance(req, dict) and 'endpoint' in req:
+                    params = req.get('params', {})
+                    # Ensure params has the required structure
+                    if 'name' not in params:
+                        params['name'] = req['endpoint']
+                    if 'arguments' not in params:
+                        params['arguments'] = {}
+                    
                     validated_plan['mcp'].append({
                         'endpoint': req['endpoint'],
-                        'params': req.get('params', {})
+                        'params': params
                     })
         
         # Validate PDF requests

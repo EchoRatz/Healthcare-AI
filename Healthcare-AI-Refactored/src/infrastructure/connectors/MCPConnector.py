@@ -28,6 +28,79 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
                 'Content-Type': 'application/json'
             })
     
+    def select_appropriate_tool(self, query: str) -> str:
+        """Select the most appropriate MCP tool based on query content."""
+        query_lower = query.lower()
+        
+        # Tool selection logic based on query keywords
+        tool_mapping = {
+            # Patient-related tools
+            'patient': 'lookup_patient',
+            'search': 'search_patients',
+            'create': 'create_patient',
+            'emergency': 'emergency_patient_lookup',
+            'medical history': 'get_medical_history',
+            'vital signs': 'add_vital_signs',
+            'medication': 'add_medication',
+            'allergy': 'add_allergy',
+            'food allergy': 'check_food_allergies',
+            'drug allergy': 'check_drug_allergies',
+            'allergy alternative': 'get_allergy_alternatives',
+            
+            # Appointment-related tools
+            'appointment': 'get_appointments',
+            'schedule': 'schedule_appointment',
+            'book appointment': 'book_appointment_with_availability_check',
+            'doctor recommendation': 'book_appointment_with_doctor_recommendation',
+            'next available': 'find_next_available_appointment',
+            'cancel': 'cancel_appointment',
+            'doctor schedule': 'get_doctor_schedule',
+            'doctor availability': 'check_doctor_availability',
+            'available doctor': 'find_available_doctors',
+            
+            # Department-related tools
+            'department': 'list_all_departments',
+            'departments': 'list_all_departments',
+            'แผนก': 'list_all_departments',
+            'department info': 'get_department_info',
+            'department staff': 'get_department_staff',
+            'department service': 'get_department_services',
+            'services': 'get_department_services',
+            
+            # Staff and doctor tools
+            'staff': 'get_staff_info',
+            'staff by department': 'list_staff_by_department',
+            'doctor': 'get_doctor_info',
+            'search doctor': 'search_doctors',
+            'doctor info': 'get_doctor_info',
+            
+            # Room-related tools
+            'ห้อง': 'get_room_info',
+            'room': 'get_room_info',
+            'room equipment': 'get_room_equipment',
+            'available room': 'find_available_rooms',
+            'room status': 'update_room_status',
+            
+            # Queue-related tools
+            'queue': 'book_queue',
+            'queue status': 'check_queue_status',
+            'department queue': 'get_department_queue_status',
+            
+            # Lab-related tools
+            'lab result': 'get_lab_results',
+            'add lab': 'add_lab_result'
+        }
+        
+        # Check for exact matches first
+        for keyword, tool in tool_mapping.items():
+            if keyword in query_lower:
+                self.logger.info(f"Selected MCP tool '{tool}' based on keyword '{keyword}'")
+                return tool
+        
+        # Default to list_all_departments for general queries
+        self.logger.info("No specific tool match found, using default 'list_all_departments'")
+        return 'list_all_departments'
+    
     def fetch(self, requests: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         Fetch data from MCP server based on requests.
@@ -49,19 +122,25 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
                     self.logger.warning(f"Skipping request without endpoint: {req}")
                     continue
                 
-                # MCP server expects this format based on Postman testing
+                # Auto-select appropriate tool if not specified
+                tool_name = params.get("name", endpoint)
+                if tool_name == endpoint and not params.get("arguments"):
+                    # If no specific tool is requested, try to select based on query context
+                    tool_name = self.select_appropriate_tool(str(params.get("query", "")))
+                
+                # MCP server expects this format based on Postman configuration
                 payload = {
-                    "method": endpoint,
+                    "method": "tools/call",
                     "params": {
-                        "name": params.get("name", endpoint),
+                        "name": tool_name,
                         "arguments": params.get("arguments", {})
                     }
                 }
                 
                 self.logger.debug(f"Sending MCP request to {endpoint}: {params}")
                 
-                # Try different endpoints
-                endpoints = ["/api/jsonrpc", "/jsonrpc", "/api", "/"]
+                # Try different endpoints - based on Postman config, the server is at root
+                endpoints = ["", "/api", "/tools"]
                 response = None
                 
                 for ep in endpoints:
@@ -85,21 +164,21 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
                     }
                     continue
                 
-                                 if response.status_code == 200:
-                     result = response.json()
-                     
-                     if 'error' in result:
-                         self.logger.error(f"MCP error for {endpoint}: {result['error']}")
-                         results[endpoint] = {
-                             'error': result['error'],
-                             'data': None
-                         }
-                     else:
-                         # The MCP server returns data directly, not wrapped in 'result'
-                         results[endpoint] = {
-                             'data': result,
-                             'error': None
-                         }
+                if response.status_code == 200:
+                    result = response.json()
+                    
+                    if 'error' in result:
+                        self.logger.error(f"MCP error for {endpoint}: {result['error']}")
+                        results[endpoint] = {
+                            'error': result['error'],
+                            'data': None
+                        }
+                    else:
+                        # The MCP server returns data directly, not wrapped in 'result'
+                        results[endpoint] = {
+                            'data': result,
+                            'error': None
+                        }
                 else:
                     self.logger.error(f"MCP HTTP error {response.status_code}: {response.text}")
                     results[endpoint] = {
@@ -116,12 +195,11 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
     def is_available(self) -> bool:
         """Check if MCP server is available."""
         try:
-            # Try different possible endpoints
+            # Try different possible endpoints - based on Postman config
             endpoints = [
-                "/api/jsonrpc",
-                "/jsonrpc",
+                "",
                 "/api",
-                "/",
+                "/tools",
                 "/health",
                 "/status"
             ]
@@ -138,14 +216,14 @@ class MCPConnector(DataConnectorInterface, LoggerMixin):
                         self.logger.info(f"MCP server available at {endpoint}")
                         return True
                     
-                                         # Try MCP server format
-                     payload = {
-                         "method": "tools/list",
-                         "params": {
-                             "name": "list_all_departments",
-                             "arguments": {}
-                         }
-                     }
+                    # Try MCP server format
+                    payload = {
+                        "method": "tools/list",
+                        "params": {
+                            "name": "list_all_departments",
+                            "arguments": {}
+                        }
+                    }
                     
                     response = self.session.post(
                         f"{self.server_url}{endpoint}",

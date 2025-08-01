@@ -17,7 +17,7 @@ import re
 # Add src to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from infrastructure.factories.EnhancedSystemFactory import EnhancedSystemFactory
+from src.infrastructure.factories.EnhancedSystemFactory import EnhancedSystemFactory
 
 
 class HealthcareQAProcessor:
