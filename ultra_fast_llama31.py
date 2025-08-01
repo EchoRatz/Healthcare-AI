@@ -16,6 +16,20 @@ import time
 import re
 from typing import Dict, List, Tuple
 
+# MCP client integration
+try:
+    from mcp_healthcare_client import validate_answer_sync
+    MCP_AVAILABLE = True
+    print("✅ MCP Healthcare Client available")
+except ImportError:
+    MCP_AVAILABLE = False
+    print("⚠️  MCP Healthcare Client not available")
+
+# Enhanced logical validator (always available)
+from enhanced_logical_validator import ThaiHealthcareLogicalValidator
+LOGICAL_VALIDATOR = ThaiHealthcareLogicalValidator()
+print("✅ Enhanced Logical Validator loaded")
+
 class UltraFastQA:
     def __init__(self):
         self.model_name = None
@@ -244,6 +258,20 @@ class UltraFastQA:
         
         return None
     
+    def _has_contradiction(self, answers: List[str]) -> bool:
+        """Check if answers contain logical contradictions"""
+        if not answers:
+            return False
+            
+        # Check for "ไม่มีข้อใดถูกต้อง" (choice ง) with other choices
+        if 'ง' in answers and len(answers) > 1:
+            return True
+            
+        # Check for other potential contradictions
+        # Add more logic here as needed for specific healthcare scenarios
+        
+        return False
+    
     def process_ultra_fast(self, test_file: str) -> List[Dict]:
         """Ultra fast processing - 10-15 minutes for 500 questions"""
         results = []
@@ -269,6 +297,34 @@ class UltraFastQA:
                 
                 # Quick Llama 3.1 query with context
                 predicted_answers, confidence = self.query_llama31_with_context(question, choices)
+                
+                # Enhanced logical validation (always applied)
+                validation_result = LOGICAL_VALIDATOR.validate_answer(question, choices, predicted_answers)
+                if validation_result.corrections_made:
+                    print(f"    🔧 Logic Fix: {validation_result.original_answer} → {validation_result.validated_answer}")
+                    print(f"    📝 Reason: {validation_result.reasoning[:60]}...")
+                    predicted_answers = validation_result.validated_answer
+                    confidence = max(confidence, validation_result.confidence)  # Use higher confidence
+                
+                # MCP validation for remaining uncertain answers (if MCP available)
+                if MCP_AVAILABLE and (confidence < 0.75 or self._has_contradiction(predicted_answers)):
+                    try:
+                        validated_answers, mcp_confidence, validation_source = validate_answer_sync(
+                            question, predicted_answers, choices
+                        )
+                        
+                        if "CORRECTED_CONTRADICTION" in validation_source or "OVERRIDE" in validation_source:
+                            predicted_answers = validated_answers
+                            confidence = mcp_confidence
+                            print(f"    🔧 MCP Validation: {validation_source}")
+                        elif "VALIDATED" in validation_source:
+                            confidence = min(confidence + 0.1, 1.0)
+                            print(f"    ✅ MCP Confirmed: {validation_source}")
+                        else:
+                            print(f"    ⚠️  MCP Result: {validation_source}")
+                            
+                    except Exception as e:
+                        print(f"    ❌ MCP Error: {str(e)[:50]}")
                 
                 results.append({
                     'id': question_id,
