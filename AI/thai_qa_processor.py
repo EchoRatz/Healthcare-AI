@@ -803,13 +803,13 @@ class ThaiHealthcareQA:
             print(f"❌ Error exporting cache: {e}")
 
     def _process_single_question_thread_safe(self, question_data):
-        """Thread-safe version of processing a single question"""
+        """Thread-safe version with reduced cache operations"""
         question_id = question_data['id']
         question_text = question_data['question']
         
         try:
-            # Get answer from AI
-            answer = self.answer_question(question_text, enable_caching=True)
+            # Get answer from AI (disable heavy caching during multithreading)
+            answer = self.answer_question(question_text, enable_caching=False)  # ปิด caching ชั่วคราว
             
             # Clean up answer
             clean_answer = ' '.join(answer.split())
@@ -818,6 +818,10 @@ class ThaiHealthcareQA:
             with self.stats_lock:
                 self.thread_stats['processed'] += 1
                 self.thread_stats['successful'] += 1
+                
+                # Print progress less frequently to reduce I/O overhead
+                if self.thread_stats['processed'] % 25 == 0:
+                    print(f"⚡ Processed: {self.thread_stats['processed']}/500")
             
             return {
                 'id': question_id,
@@ -827,9 +831,6 @@ class ThaiHealthcareQA:
             }
             
         except Exception as e:
-            error_msg = f"ข้อผิดพลาด: {str(e)}"
-            
-            # Update thread-safe stats
             with self.stats_lock:
                 self.thread_stats['processed'] += 1
                 self.thread_stats['errors'] += 1
@@ -837,13 +838,13 @@ class ThaiHealthcareQA:
             return {
                 'id': question_id,
                 'question': question_text,
-                'answer': error_msg,
+                'answer': f"Error: {str(e)}",
                 'status': 'error'
             }
         
     def process_csv_multithreaded(self, csv_file_path: str, output_file_path: str = None, 
-                                 max_threads: int = 120, clean_format: bool = False) -> None:
-        """Process CSV questions using multiple threads (up to 120 threads)"""
+                             max_threads: int = 120, clean_format: bool = False) -> None:
+        """Optimized multithreaded processing"""
         import csv
         import os
         from datetime import datetime
@@ -851,14 +852,9 @@ class ThaiHealthcareQA:
         print(f"🚀 เริ่มประมวลผลแบบ Multi-threaded: {csv_file_path}")
         print(f"🔧 จำนวน Threads: {max_threads}")
         
-        # Default output file if not provided
-        if output_file_path is None:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_file_path = f"thai_qa_answers_threaded_{timestamp}.csv"
-        
-        # Reset thread stats
-        with self.stats_lock:
-            self.thread_stats = {'processed': 0, 'successful': 0, 'errors': 0}
+        # Temporarily disable cache to improve speed
+        original_cache_enabled = self.cache_enabled
+        self.cache_enabled = False  # ปิด cache ระหว่าง multithreading
         
         try:
             # Read CSV file
@@ -868,82 +864,106 @@ class ThaiHealthcareQA:
             
             total_questions = len(questions)
             print(f"📝 คำถามทั้งหมด: {total_questions} ข้อ")
+            print("🔇 Cache disabled for maximum speed")
             print("=" * 60)
             
-            # Start processing with thread pool
-            start_time = time.time()  # ใช้ time จาก import
+            # Reset thread stats
+            with self.stats_lock:
+                self.thread_stats = {'processed': 0, 'successful': 0, 'errors': 0}
+            
+            start_time = time.time()
             results = [None] * total_questions
             
-            # Process questions using ThreadPoolExecutor
-            with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
-                # Submit all tasks
-                future_to_index = {}
-                for i, question_data in enumerate(questions):
-                    future = executor.submit(self._process_single_question_thread_safe, question_data)
-                    future_to_index[future] = i
+            # Use ThreadPoolExecutor with optimized settings
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=max_threads,
+                thread_name_prefix="QA_Thread"
+            ) as executor:
                 
-                # Progress tracking
+                print(f"🚀 Starting {max_threads} threads...")
+                
+                # Submit all tasks at once
+                future_to_index = {
+                    executor.submit(self._process_single_question_thread_safe, question_data): i
+                    for i, question_data in enumerate(questions)
+                }
+                
+                print(f"📤 Submitted {len(future_to_index)} tasks to thread pool")
+                
+                # Collect results as they complete
                 completed = 0
-                for future in concurrent.futures.as_completed(future_to_index):
+                for future in concurrent.futures.as_completed(future_to_index, timeout=1800):  # 30 min timeout
                     index = future_to_index[future]
                     completed += 1
                     
                     try:
-                        result = future.result()
+                        result = future.result(timeout=30)  # 30 sec per question timeout
                         results[index] = result
                         
-                        # Show progress
-                        if completed % 50 == 0 or completed == total_questions:
-                            progress = (completed / total_questions) * 100
-                            print(f"⏳ ความคืบหน้า: {completed}/{total_questions} ({progress:.1f}%)")
-                        
+                        # Show progress every 50 completions
+                        if completed % 50 == 0:
+                            elapsed = time.time() - start_time
+                            rate = completed / elapsed if elapsed > 0 else 0
+                            remaining = total_questions - completed
+                            eta = remaining / rate if rate > 0 else 0
+                            print(f"⚡ Progress: {completed}/{total_questions} ({completed/total_questions*100:.1f}%) | Rate: {rate:.1f}/s | ETA: {eta:.0f}s")
+                            
                     except Exception as e:
-                        # Fallback error handling
+                        # Handle individual task failures
                         question_data = questions[index]
                         results[index] = {
                             'id': question_data['id'],
                             'question': question_data['question'],
-                            'answer': f"Thread error: {str(e)}",
-                            'status': 'thread_error'
+                            'answer': f"Timeout/Error: {str(e)}",
+                            'status': 'timeout'
                         }
+                        print(f"❌ Task {index} failed: {e}")
             
             end_time = time.time()
             processing_time = end_time - start_time
             
-            print(f"\n⏱️  เวลาประมวลผลทั้งหมด: {processing_time:.2f} วินาที")
-            print(f"⚡ ความเร็วเฉลี่ย: {total_questions/processing_time:.2f} คำถาม/วินาที")
+            print(f"\n⏱️  Total processing time: {processing_time:.2f} seconds")
+            print(f"⚡ Average rate: {total_questions/processing_time:.2f} questions/second")
             
-            # Save results to CSV
+            # Save results
+            if output_file_path is None:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                output_file_path = f"multithreaded_results_{timestamp}.csv"
+            
             with open(output_file_path, 'w', encoding='utf-8', newline='') as file:
                 if clean_format:
                     fieldnames = ['id', 'answer']
-                    clean_results = [{'id': r['id'], 'answer': r['answer']} for r in results]
+                    clean_results = [{'id': r['id'], 'answer': r['answer']} for r in results if r]
                 else:
-                    fieldnames = ['id', 'question', 'answer']
-                    clean_results = results
+                    fieldnames = ['id', 'question', 'answer', 'status']
+                    clean_results = [r for r in results if r]
                 
                 writer = csv.DictWriter(file, fieldnames=fieldnames)
                 writer.writeheader()
                 writer.writerows(clean_results)
             
-            # Final statistics
-            successful_count = sum(1 for r in results if r and r.get('status') == 'success')
-            error_count = sum(1 for r in results if r and r.get('status') in ['error', 'thread_error'])
+            # Statistics
+            successful = sum(1 for r in results if r and r.get('status') == 'success')
+            errors = sum(1 for r in results if r and r.get('status') in ['error', 'timeout'])
             
             print("=" * 60)
-            print(f"🎉 เสร็จสิ้น! บันทึกผลลัพธ์ที่: {output_file_path}")
-            print(f"📊 สถิติการประมวลผล:")
-            print(f"   - คำถามทั้งหมด: {total_questions}")
-            print(f"   - ประมวลผลสำเร็จ: {successful_count}")
-            print(f"   - เกิดข้อผิดพลาด: {error_count}")
-            print(f"   - อัตราความสำเร็จ: {(successful_count/total_questions)*100:.1f}%")
-            print(f"   - เวลาเฉลี่ย/คำถาม: {processing_time/total_questions:.3f} วินาที")
-            print(f"   - Threads ที่ใช้: {max_threads}")
+            print(f"🎉 Complete! Results saved to: {output_file_path}")
+            print(f"📊 Final Statistics:")
+            print(f"   - Total questions: {total_questions}")
+            print(f"   - Successful: {successful}")
+            print(f"   - Errors/Timeouts: {errors}")
+            print(f"   - Success rate: {successful/total_questions*100:.1f}%")
+            print(f"   - Processing speed: {total_questions/processing_time:.2f} questions/sec")
             
         except Exception as e:
-            print(f"❌ เกิดข้อผิดพลาดในการประมวลผล: {str(e)}")
+            print(f"❌ Critical error in multithreaded processing: {e}")
             import traceback
             traceback.print_exc()
+        
+        finally:
+            # Restore original cache setting
+            self.cache_enabled = original_cache_enabled
+            print("🔄 Cache setting restored")
 
     def add_to_cache(self, extracted_info: Dict[str, Any]):
         """Thread-safe version of add_to_cache"""
@@ -1016,6 +1036,145 @@ class ThaiHealthcareQA:
             # Fallback to standard processing
             print("🔄 Falling back to standard processing...")
             self.process_csv_questions(csv_file_path, output_file_path, clean_format)
+
+    def _process_single_question_thread_safe_optimized(self, question_data):
+        """Ultra-optimized thread-safe processing"""
+        question_id = question_data['id']
+        question_text = question_data['question']
+        
+        try:
+            # BYPASS ALL CACHE AND VECTOR SEARCH - Direct AI call
+            prompt = f"""คุณเป็นผู้ช่วยที่เชี่ยวชาญในการตอบคำถามเกี่ยวกับระบบหลักประกันสุขภาพแห่งชาติของไทย
+
+    คำถาม: {question_text}
+
+    คำสั่ง: ตอบเฉพาะตัวอักษรที่ถูกต้อง เช่น "ก" หรือ "ก, ค" 
+
+    คำตอบ:"""
+            
+            # Direct Ollama call without any caching/vector search
+            import ollama
+            response = ollama.generate(
+                model="llama3.2",
+                prompt=prompt,
+                options={
+                    'temperature': 0.1,
+                    'num_predict': 50,  # Short answers only
+                    'top_p': 0.9
+                }
+            )
+            
+            answer = response['response'].strip()
+            
+            # Update stats (minimal locking)
+            with self.stats_lock:
+                self.thread_stats['processed'] += 1
+                self.thread_stats['successful'] += 1
+            
+            return {
+                'id': question_id,
+                'answer': answer,
+                'status': 'success'
+            }
+            
+        except Exception as e:
+            with self.stats_lock:
+                self.thread_stats['processed'] += 1
+                self.thread_stats['errors'] += 1
+            
+            return {
+                'id': question_id,
+                'answer': f"Error: {str(e)}",
+                'status': 'error'
+            }
+
+    def process_csv_ultra_fast(self, csv_file_path: str, output_file_path: str = None, 
+                            max_threads: int = 10) -> None:
+        """Ultra-fast processing with minimal I/O"""
+        import csv
+        import time
+        from datetime import datetime
+        
+        print(f"⚡ ULTRA-FAST MODE: {max_threads} threads")
+        print("🚫 All caching, vector search, and heavy I/O DISABLED")
+        
+        try:
+            # Read all questions at once
+            with open(csv_file_path, 'r', encoding='utf-8') as file:
+                reader = csv.DictReader(file)
+                questions = list(reader)
+            
+            total_questions = len(questions)
+            print(f"📝 Processing {total_questions} questions")
+            
+            # Reset stats
+            with self.stats_lock:
+                self.thread_stats = {'processed': 0, 'successful': 0, 'errors': 0}
+            
+            start_time = time.time()
+            results = [None] * total_questions
+            
+            # Use fewer threads to avoid I/O contention
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
+                
+                # Submit all tasks
+                future_to_index = {
+                    executor.submit(self._process_single_question_thread_safe_optimized, question_data): i
+                    for i, question_data in enumerate(questions)
+                }
+                
+                # Collect results with progress
+                completed = 0
+                for future in concurrent.futures.as_completed(future_to_index):
+                    index = future_to_index[future]
+                    completed += 1
+                    
+                    try:
+                        result = future.result(timeout=60)
+                        results[index] = result
+                        
+                        # Show progress every 25 completions (less I/O)
+                        if completed % 25 == 0:
+                            elapsed = time.time() - start_time
+                            rate = completed / elapsed
+                            print(f"⚡ {completed}/{total_questions} | Rate: {rate:.2f}/s")
+                            
+                    except Exception as e:
+                        results[index] = {
+                            'id': questions[index]['id'],
+                            'answer': f"Timeout: {str(e)}",
+                            'status': 'timeout'
+                        }
+            
+            end_time = time.time()
+            processing_time = end_time - start_time
+            
+            # Output file
+            if output_file_path is None:
+                output_file_path = f"ultra_fast_results_{datetime.now().strftime('%H%M%S')}.csv"
+            
+            # Single write operation
+            with open(output_file_path, 'w', encoding='utf-8', newline='') as file:
+                writer = csv.DictWriter(file, fieldnames=['id', 'answer'])
+                writer.writeheader()
+                for r in results:
+                    if r:
+                        writer.writerow({'id': r['id'], 'answer': r['answer']})
+            
+            # Final stats
+            successful = sum(1 for r in results if r and r.get('status') == 'success')
+            
+            print("=" * 60)
+            print(f"🏁 ULTRA-FAST COMPLETE!")
+            print(f"⏱️  Time: {processing_time:.2f} seconds")
+            print(f"⚡ Rate: {total_questions/processing_time:.2f} questions/second")
+            print(f"✅ Success: {successful}/{total_questions}")
+            print(f"📄 Output: {output_file_path}")
+            
+        except Exception as e:
+            print(f"❌ Error: {e}")
+            import traceback
+            traceback.print_exc()
 
 
 def main():
