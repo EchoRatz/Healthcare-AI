@@ -1,0 +1,50 @@
+# Healthcare AI API - Curl Examples
+# =================================
+
+# Make sure the API server is running first:
+# python functional_api_server.py
+
+# 1. Health Check
+curl -X GET "http://localhost:5000/health"
+
+# 2. Basic Question Evaluation
+curl -X POST "http://localhost:5000/eval" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "ผู้ป่วยมีสิทธิ์รับบริการอะไรบ้างในระบบหลักประกันสุขภาพแห่งชาติ?ก.ตรวจสุขภาพฟรี ข.ผ่าตัด 1000 บาท ค.ยา 50 บาท/เม็ด ง.ไม่มีสิทธิ์"
+  }'
+
+# 3. Department Selection Question
+curl -X POST "http://localhost:5000/eval" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "ผมปวดท้องมาก อ้วกด้วย ไปแผนกไหนดี?ก.Endocrinology ข.Orthopedics ค.Internal Medicine ง.Psychiatry"
+  }'
+
+# 4. Cost Question
+curl -X POST "http://localhost:5000/eval" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "ค่าใช้จ่ายในการรักษาพยาบาลทั่วไปเท่าไหร่?ก.ฟรี ข.30บาท ค.100บาท ง.500บาท"
+  }'
+
+# 5. Emergency Coverage Question
+curl -X POST "http://localhost:5000/eval" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "การรักษาฉุกเฉินครอบคลุมอะไรบ้าง?ก.อุบัติเหตุ ข.หัวใจวาย ค.หมดสติ ง.ทุกข้อ"
+  }'
+
+# 6. List Available Models
+curl -X GET "http://localhost:5000/models"
+
+# 7. API Information
+curl -X GET "http://localhost:5000/"
+
+# Response Format:
+# {
+#   "answer": "ก",
+#   "reason": "จากการวิเคราะห์คำถามและข้อมูลความรู้ที่เกี่ยวข้อง ได้คำตอบคือ ก เพราะ...",
+#   "confidence": 0.85,
+#   "llm_available": true
+# } 
