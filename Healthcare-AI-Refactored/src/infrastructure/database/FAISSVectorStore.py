@@ -261,6 +261,89 @@ class FAISSVectorStore(VectorStoreInterface, LoggerMixin):
         """Get total number of documents."""
         return len(self.documents)
     
+    def is_loaded(self) -> bool:
+        """Check if the vector store is loaded with documents."""
+        return len(self.documents) > 0 and self.index is not None
+    
+    def load_documents(self) -> bool:
+        """Load documents from knowledge base files."""
+        try:
+            import os
+            from sentence_transformers import SentenceTransformer
+            
+            # Document files to load
+            doc_files = [
+                "Healthcare-AI-Refactored/src/infrastructure/results_doc/direct_extraction_corrected.txt",
+                "Healthcare-AI-Refactored/src/infrastructure/results_doc2/direct_extraction_corrected.txt",
+                "Healthcare-AI-Refactored/src/infrastructure/results_doc3/direct_extraction_corrected.txt",
+            ]
+            
+            documents = []
+            vectors = []
+            
+            # Initialize sentence transformer for embeddings
+            model = SentenceTransformer('all-MiniLM-L6-v2')
+            
+            for i, doc_file in enumerate(doc_files, 1):
+                if os.path.exists(doc_file):
+                    with open(doc_file, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                        
+                        # Split content into sections
+                        sections = self._split_into_sections(content)
+                        
+                        for j, section in enumerate(sections):
+                            if len(section.strip()) > 100:  # Only meaningful sections
+                                doc_id = f"doc_{i}_section_{j}"
+                                document = Document(
+                                    content=section,
+                                    metadata={"source": doc_file, "section": j},
+                                    doc_id=doc_id
+                                )
+                                documents.append(document)
+                                
+                                # Generate embedding
+                                embedding = model.encode(section)
+                                vectors.append(embedding.tolist())
+                    
+                    self.logger.info(f"Loaded document {i}: {len(sections)} sections")
+                else:
+                    self.logger.warning(f"Document file not found: {doc_file}")
+            
+            if documents:
+                # Add documents to vector store
+                success = self.add_documents(documents, vectors)
+                if success:
+                    self.logger.info(f"Successfully loaded {len(documents)} documents")
+                    return True
+                else:
+                    self.logger.error("Failed to add documents to vector store")
+                    return False
+            else:
+                self.logger.warning("No documents found to load")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"Failed to load documents: {e}")
+            return False
+    
+    def _split_into_sections(self, content: str) -> list:
+        """Split content into meaningful sections."""
+        import re
+        
+        # Split by page markers
+        sections = re.split(r'--- Page \d+ ---', content)
+        
+        # Further split by natural breaks
+        final_sections = []
+        for section in sections:
+            if len(section.strip()) > 50:
+                # Split by double newlines or Q/A patterns
+                subsections = re.split(r'\n\n+', section)
+                final_sections.extend([s.strip() for s in subsections if len(s.strip()) > 50])
+        
+        return final_sections
+    
     def clear(self) -> bool:
         """Clear all documents and vectors."""
         try:

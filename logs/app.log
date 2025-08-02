@@ -1,0 +1,6 @@
+2025-08-02 08:32:57,164 - api_server - INFO - Initializing Healthcare AI API Server...
+2025-08-02 08:32:57,165 - api_server - INFO - LLM client initialized
+2025-08-02 08:33:30,094 - FAISSVectorStore - ERROR - Failed to load documents: No module named 'PIL'
+2025-08-02 08:33:30,095 - api_server - INFO - Vector store initialized and documents loaded
+2025-08-02 08:33:30,096 - api_server - INFO - Use cases initialized
+2025-08-02 08:33:30,097 - api_server - INFO - Healthcare AI system initialization complete

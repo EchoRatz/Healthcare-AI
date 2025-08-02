@@ -183,3 +183,11 @@ class OllamaClient(LLMInterface, LoggerMixin):
     def get_parameters(self) -> Dict[str, Any]:
         """Get current parameters."""
         return self.parameters.copy()
+    
+    def get_model_name(self) -> str:
+        """Get current model name."""
+        return self.model_name
+    
+    def list_available_models(self) -> list:
+        """List available models (alias for list_models)."""
+        return self.list_models()
