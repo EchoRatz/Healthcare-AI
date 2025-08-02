@@ -149,7 +149,7 @@ async def evaluate_question(request: EvaluationRequest):
                 
                 # Analyze question
                 question_analysis = qa_system.analyze_question_advanced(question)
-                print(f"🧠 Question analysis: {question_analysis.question_type}")
+                print(f"🧠 Question analysis: {question_analysis.primary_type} - {question_analysis.secondary_type}")
                 
                 # Search for context
                 context_matches = qa_system.search_context_semantic(question_analysis)
