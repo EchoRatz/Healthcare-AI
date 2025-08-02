@@ -302,7 +302,12 @@ class HighAccuracyHealthcareQA:
         for pattern_type, patterns in self.number_patterns.items():
             for pattern in patterns:
                 matches = re.findall(pattern, text)
-                keywords.extend(matches)
+                # Flatten tuples to strings
+                for match in matches:
+                    if isinstance(match, tuple):
+                        keywords.extend(match)
+                    else:
+                        keywords.append(match)
         
         # Extract Thai words (2+ characters)
         thai_words = re.findall(r'[ก-ฮ]{2,}', text)
@@ -368,7 +373,12 @@ class HighAccuracyHealthcareQA:
         for pattern_type, patterns in self.number_patterns.items():
             for pattern in patterns:
                 matches = re.findall(pattern, question_text)
-                numbers.extend(matches)
+                # Flatten tuples to strings
+                for match in matches:
+                    if isinstance(match, tuple):
+                        numbers.extend(match)
+                    else:
+                        numbers.append(match)
         
         # Determine secondary type
         if department_terms:
@@ -761,7 +771,7 @@ async def main():
 
     # Process questions
     test_file = "Healthcare-AI-Refactored/src/infrastructure/test.csv"
-    results = await qa_system.process_questions_high_accuracy(test_file)
+    results = qa_system.process_questions_high_accuracy(test_file)
 
     if results:
         # Save results
