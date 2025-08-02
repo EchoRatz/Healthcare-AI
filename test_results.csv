@@ -1,0 +1,6 @@
+id,type,expected,actual,correct,confidence,validation_passed,context_relevance
+test_1,emergency,ค,ง,False,0.0,False,1.0
+test_2,exclusion,ง,ง,True,0.0,False,3.1
+test_3,procedure,ข,ง,False,0.0,False,3.3000000000000003
+test_4,department,ข,ง,False,0.0,False,1.6
+test_5,factual,ก,ง,False,0.0,False,1.9999999999999998
